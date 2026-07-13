@@ -1,0 +1,349 @@
+---
+const githubUrl = 'https://github.com/agent-toolbox';
+const features = [
+  {
+    title: 'Package Validator',
+    body: "19.7% of AI-generated imports don't exist. We check every one against PyPI, npm, crates.io, and Go — in under 200ms.",
+    endpoint: 'POST /v1/validate/imports',
+    icon: 'shield-check',
+  },
+  {
+    title: 'Hallucination Firewall',
+    body: 'Returns PASS, FLAG, or BLOCK for any LLM output. Catches bad packages, dead URLs, malformed citations, and numeric contradictions. Every verdict is SHA-256 certified.',
+    endpoint: 'POST /v1/verify',
+    icon: 'fire-shield',
+  },
+  {
+    title: 'Context Distiller',
+    body: 'Trim bloated agent context windows to a token budget. Keep the system prompt, deduplicate, and slice from newest to oldest. Up to 80% compression.',
+    endpoint: 'POST /v1/distill',
+    icon: 'compress',
+  },
+];
+
+const stats = [
+  { value: '19.7%', label: 'of AI-generated packages are hallucinated', source: 'USENIX 2025' },
+  { value: '68%', label: 'of multi-agent pipelines contain hallucinations', source: 'IBM 2026' },
+  { value: '<200ms', label: 'average firewall check latency', source: null },
+];
+
+const curlExample = `curl -X POST https://agent-toolbox.ai/v1/validate/imports \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "language": "python",
+    "code": "import numpy\\nfrom superlogger import magic_log\\nimport pandas"
+  }'`;
+
+const jsonResponse = `{
+  "language": "python",
+  "valid": [
+    { "name": "numpy", "status": "valid", "registry": "pypi" },
+    { "name": "pandas", "status": "valid", "registry": "pypi" }
+  ],
+  "hallucinated": [
+    { "name": "superlogger", "status": "hallucinated", "evidence": "Not found on PyPI" }
+  ],
+  "verdict": "BLOCK",
+  "totalImports": 3,
+  "hallucinationRate": 0.33,
+  "latencyMs": 142
+}`;
+
+const mcpConfig = `{
+  "mcpServers": {
+    "agentoolbox": {
+      "command": "node",
+      "args": ["/path/to/agentoolbox/packages/mcp/dist/index.js"]
+    }
+  }
+}`;
+
+const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
+---
+
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="The quality layer every AI agent needs. Catch hallucinated packages, block bad outputs, and cut token waste before your agent breaks production."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <title>agent-toolbox.ai — The quality layer every AI agent needs</title>
+  </head>
+  <body class="bg-surface text-white antialiased" style="font-family: 'Inter', system-ui, sans-serif;">
+    <!-- NAV -->
+    <header class="sticky top-0 z-50 border-b border-surface-border bg-surface/80 backdrop-blur">
+      <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <a href="#top" class="flex items-center gap-2 font-mono text-lg font-semibold tracking-tight">
+          <span class="inline-block h-2.5 w-2.5 rounded-full bg-brand"></span>
+          <span>agent-toolbox<span class="text-brand">.ai</span></span>
+        </a>
+        <a
+          href={githubUrl}
+          class="inline-flex items-center gap-2 rounded-md border border-surface-border px-3 py-1.5 text-sm font-medium text-[#8b949e] transition hover:border-brand hover:text-white"
+        >
+          <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+          </svg>
+          GitHub
+        </a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <!-- HERO -->
+      <section class="relative overflow-hidden">
+        <div
+          class="pointer-events-none absolute inset-0 opacity-40"
+          style="background: radial-gradient(600px circle at 50% 0%, rgba(0,212,170,0.15), transparent 70%);"
+        >
+        </div>
+        <div class="relative mx-auto max-w-6xl px-6 py-24 text-center sm:py-32">
+          <span
+            class="inline-flex items-center rounded-full border border-brand/30 bg-brand/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand"
+          >
+            AI Agent Infrastructure
+          </span>
+          <h1 class="mx-auto mt-6 max-w-3xl text-4xl font-extrabold leading-tight tracking-tight sm:text-6xl">
+            The quality layer every<br class="hidden sm:block" />
+            AI agent needs
+          </h1>
+          <p class="mx-auto mt-6 max-w-2xl text-lg text-[#8b949e] sm:text-xl">
+            Catch hallucinated packages. Block bad outputs. Cut token waste.
+            <span class="text-white">Before your agent breaks production.</span>
+          </p>
+          <div class="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <a
+              href="#code"
+              class="inline-flex w-full items-center justify-center rounded-lg bg-brand px-6 py-3 font-semibold text-surface transition hover:bg-brand-dark sm:w-auto"
+            >
+              Read the docs
+            </a>
+            <a
+              href={githubUrl}
+              class="inline-flex w-full items-center justify-center rounded-lg border border-surface-border bg-surface-card px-6 py-3 font-semibold text-white transition hover:border-brand sm:w-auto"
+            >
+              View on GitHub
+            </a>
+          </div>
+          <div class="mt-10 flex justify-center">
+            <span
+              class="inline-flex items-center gap-2 rounded-full border border-surface-border bg-surface-card px-4 py-1.5 font-mono text-sm text-[#8b949e]"
+            >
+              <span class="relative flex h-2.5 w-2.5">
+                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-75"></span>
+                <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-brand"></span>
+              </span>
+              API Online · &lt;200ms avg
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- STATS BAR -->
+      <section class="mx-auto max-w-6xl px-6 pb-12">
+        <div class="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-surface-border bg-surface-border sm:grid-cols-3">
+          {
+            stats.map((stat) => (
+              <div class="bg-surface-card p-8 text-center">
+                <div class="font-mono text-4xl font-bold text-brand">{stat.value}</div>
+                <p class="mt-2 text-sm text-[#8b949e]">{stat.label}</p>
+                {stat.source && (
+                  <p class="mt-1 text-xs font-medium uppercase tracking-wider text-[#6e7681]">{stat.source}</p>
+                )}
+              </div>
+            ))
+          }
+        </div>
+      </section>
+
+      <!-- FEATURES -->
+      <section class="mx-auto max-w-6xl px-6 py-16">
+        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">Three checks. One firewall.</h2>
+        <p class="mx-auto mt-3 max-w-2xl text-center text-[#8b949e]">
+          Composable, agent-callable services that verify and improve LLM outputs before they cause damage.
+        </p>
+        <div class="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+          {
+            features.map((feature) => (
+              <div class="group relative overflow-hidden rounded-xl border border-surface-border bg-surface-card p-6 transition hover:border-brand/50">
+                <div class="absolute inset-x-0 top-0 h-1 bg-brand"></div>
+                <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                  {feature.icon === 'shield-check' && (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                      <path d="m9 12 2 2 4-4" />
+                    </svg>
+                  )}
+                  {feature.icon === 'fire-shield' && (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                      <path d="M12 7c1 1.5 1.5 2.5 1.5 3.5A1.5 1.5 0 0 1 12 12a1.5 1.5 0 0 1-1.5-1.5C10.5 9.5 11 8.5 12 7z" />
+                    </svg>
+                  )}
+                  {feature.icon === 'compress' && (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <polyline points="4 14 10 14 10 20" />
+                      <polyline points="20 10 14 10 14 4" />
+                      <line x1="14" y1="10" x2="21" y2="3" />
+                      <line x1="3" y1="21" x2="10" y2="14" />
+                    </svg>
+                  )}
+                </div>
+                <h3 class="mt-5 text-lg font-semibold">{feature.title}</h3>
+                <p class="mt-2 text-sm leading-relaxed text-[#8b949e]">{feature.body}</p>
+                <span class="mt-5 inline-block rounded-md border border-surface-border bg-surface px-3 py-1.5 font-mono text-xs text-brand">
+                  {feature.endpoint}
+                </span>
+              </div>
+            ))
+          }
+        </div>
+      </section>
+
+      <!-- CODE EXAMPLE -->
+      <section id="code" class="mx-auto max-w-6xl px-6 py-16">
+        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">Catch it before it runs</h2>
+        <p class="mx-auto mt-3 max-w-2xl text-center text-[#8b949e]">
+          Send AI-generated code. Get a verdict in milliseconds.
+        </p>
+        <div class="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <!-- Request -->
+          <div class="overflow-hidden rounded-xl border border-surface-border bg-[#0a0d12]">
+            <div class="flex items-center gap-2 border-b border-surface-border px-4 py-3">
+              <span class="h-3 w-3 rounded-full bg-[#ff5f56]"></span>
+              <span class="h-3 w-3 rounded-full bg-[#ffbd2e]"></span>
+              <span class="h-3 w-3 rounded-full bg-[#27c93f]"></span>
+              <span class="ml-2 font-mono text-xs text-[#6e7681]">request.sh</span>
+            </div>
+            <pre class="overflow-x-auto p-5 font-mono text-sm leading-relaxed text-[#3fb950]"><code>{curlExample}</code></pre>
+          </div>
+          <!-- Response -->
+          <div class="overflow-hidden rounded-xl border border-surface-border bg-[#0a0d12]">
+            <div class="flex items-center justify-between border-b border-surface-border px-4 py-3">
+              <div class="flex items-center gap-2">
+                <span class="h-3 w-3 rounded-full bg-[#ff5f56]"></span>
+                <span class="h-3 w-3 rounded-full bg-[#ffbd2e]"></span>
+                <span class="h-3 w-3 rounded-full bg-[#27c93f]"></span>
+                <span class="ml-2 font-mono text-xs text-[#6e7681]">response.json</span>
+              </div>
+              <span class="rounded bg-red-500/15 px-2 py-0.5 font-mono text-xs font-semibold text-red-400">BLOCK</span>
+            </div>
+            <pre class="overflow-x-auto p-5 font-mono text-sm leading-relaxed text-[#8b949e]"><code>{jsonResponse}</code></pre>
+          </div>
+        </div>
+        <div class="mt-6 flex flex-wrap items-center justify-center gap-3 font-mono text-xs">
+          <span class="rounded-md bg-[#238636]/15 px-3 py-1 font-semibold text-[#3fb950]">PASS</span>
+          <span class="rounded-md bg-[#9e6a03]/20 px-3 py-1 font-semibold text-[#d29922]">FLAG</span>
+          <span class="rounded-md bg-[#da3633]/15 px-3 py-1 font-semibold text-[#f85149]">BLOCK</span>
+        </div>
+      </section>
+
+      <!-- MCP INTEGRATION -->
+      <section class="mx-auto max-w-6xl px-6 py-16">
+        <div class="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
+          <div>
+            <span class="inline-flex items-center rounded-full border border-brand/30 bg-brand/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand">
+              Model Context Protocol
+            </span>
+            <h2 class="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">
+              Works with Claude, Warp, Cursor — any MCP client
+            </h2>
+            <p class="mt-4 text-[#8b949e]">
+              Drop agent-toolbox into your MCP config and your agent gets three quality tools out of the box. No SDK, no glue code.
+            </p>
+            <div class="mt-6 flex flex-wrap gap-3">
+              {
+                mcpTools.map((tool) => (
+                  <span class="inline-flex items-center gap-2 rounded-md border border-surface-border bg-surface-card px-3 py-1.5 font-mono text-sm text-brand">
+                    <span class="h-1.5 w-1.5 rounded-full bg-brand"></span>
+                    {tool}
+                  </span>
+                ))
+              }
+            </div>
+          </div>
+          <div class="overflow-hidden rounded-xl border border-surface-border bg-[#0a0d12]">
+            <div class="flex items-center gap-2 border-b border-surface-border px-4 py-3">
+              <span class="h-3 w-3 rounded-full bg-[#ff5f56]"></span>
+              <span class="h-3 w-3 rounded-full bg-[#ffbd2e]"></span>
+              <span class="h-3 w-3 rounded-full bg-[#27c93f]"></span>
+              <span class="ml-2 font-mono text-xs text-[#6e7681]">claude_desktop_config.json</span>
+            </div>
+            <pre class="overflow-x-auto p-5 font-mono text-sm leading-relaxed text-[#8b949e]"><code>{mcpConfig}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRICING -->
+      <section class="mx-auto max-w-6xl px-6 py-16">
+        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">Start free. Scale on-chain.</h2>
+        <p class="mx-auto mt-3 max-w-2xl text-center text-[#8b949e]">Pay per call in SOL when you're ready.</p>
+        <div class="mx-auto mt-12 grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-2">
+          <!-- Free -->
+          <div class="rounded-xl border border-surface-border bg-surface-card p-8">
+            <h3 class="text-lg font-semibold">Free</h3>
+            <div class="mt-4 flex items-baseline gap-1">
+              <span class="text-4xl font-bold">$0</span>
+              <span class="text-[#8b949e]">/ forever</span>
+            </div>
+            <ul class="mt-6 space-y-3 text-sm text-[#8b949e]">
+              <li class="flex items-center gap-2"><span class="text-brand">✓</span> 10 calls</li>
+              <li class="flex items-center gap-2"><span class="text-brand">✓</span> No auth needed</li>
+              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All endpoints</li>
+            </ul>
+            <a
+              href="#code"
+              class="mt-8 inline-flex w-full items-center justify-center rounded-lg bg-brand px-5 py-2.5 font-semibold text-surface transition hover:bg-brand-dark"
+            >
+              Get started
+            </a>
+          </div>
+          <!-- Pro -->
+          <div class="relative rounded-xl border border-brand/40 bg-surface-card p-8">
+            <span class="absolute right-6 top-6 rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand">
+              Coming soon
+            </span>
+            <h3 class="text-lg font-semibold">Pro</h3>
+            <div class="mt-4 flex items-baseline gap-1">
+              <span class="text-4xl font-bold">SOL</span>
+              <span class="text-[#8b949e]">/ per call</span>
+            </div>
+            <ul class="mt-6 space-y-3 text-sm text-[#8b949e]">
+              <li class="flex items-center gap-2"><span class="text-brand">✓</span> SOL micropayments</li>
+              <li class="flex items-center gap-2"><span class="text-brand">✓</span> Per-call pricing</li>
+              <li class="flex items-center gap-2"><span class="text-brand">✓</span> Priority queue</li>
+              <li class="flex items-center gap-2"><span class="text-brand">✓</span> SLA</li>
+            </ul>
+            <button
+              disabled
+              class="mt-8 inline-flex w-full cursor-not-allowed items-center justify-center rounded-lg border border-surface-border px-5 py-2.5 font-semibold text-[#6e7681]"
+            >
+              Coming soon
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-surface-border">
+      <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-[#8b949e] sm:flex-row">
+        <div class="flex items-center gap-2 font-mono">
+          <span class="inline-block h-2 w-2 rounded-full bg-brand"></span>
+          <span>agent-toolbox.ai</span>
+        </div>
+        <span>Built for the agentic era</span>
+        <a href={githubUrl} class="transition hover:text-white">GitHub</a>
+      </div>
+    </footer>
+  </body>
+</html>

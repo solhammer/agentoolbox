@@ -1,0 +1,22 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "node packages/api/dist/index.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "api"
+
+[services.variables]
+PORT = "3000"
+NODE_ENV = "production"
+# Set these in the Railway dashboard:
+# SOL_SERVICE_WALLET = ""
+# REDIS_URL = ""          # auto-populated by Railway Redis add-on
+# VECTARA_API_KEY = ""
+# SOL_RPC_URL = ""
