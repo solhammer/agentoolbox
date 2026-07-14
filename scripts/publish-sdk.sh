@@ -57,8 +57,12 @@ fi
 # pnpm must be available
 command -v pnpm >/dev/null 2>&1 || error "pnpm not found. Run: npm install -g pnpm"
 
-# npm must be logged in
-npm whoami >/dev/null 2>&1 || error "Not logged in to npm. Run: npm login"
+# npm auth — prefer NPM_TOKEN env var (granular access token, bypasses 2FA)
+# fall back to existing browser session
+if [ -n "${NPM_TOKEN:-}" ]; then
+  npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
+fi
+npm whoami >/dev/null 2>&1 || error "Not logged in to npm. Set NPM_TOKEN or run: npm login"
 NPM_USER=$(npm whoami 2>/dev/null)
 success "npm logged in as: $NPM_USER"
 
