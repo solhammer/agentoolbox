@@ -5,8 +5,8 @@ const TIMEOUT_MS = 3000;
 
 /** Classifies a latency measurement into a health status tier. */
 function tierByLatency(latencyMs: number): HealthStatus["status"] {
-  if (latencyMs < 50) return "ok";
-  if (latencyMs < 500) return "degraded";
+  if (latencyMs < 200) return "ok";   // raised from 50ms — remote services are fine at <200ms
+  if (latencyMs < 1000) return "degraded";
   return "down";
 }
 
@@ -67,12 +67,20 @@ async function checkSolana(): Promise<HealthStatus> {
   }
 }
 
-/** Performs a HEAD request and grades reachability. */
-async function checkHttp(service: string, url: string): Promise<HealthStatus> {
+/** Performs a GET request and grades reachability. */
+async function checkHttp(
+  service: string,
+  url: string,
+  headers?: Record<string, string>
+): Promise<HealthStatus> {
   const start = Date.now();
   try {
     const res = await fetch(url, {
-      method: "HEAD",
+      method: "GET",
+      headers: {
+        "User-Agent": "agent-toolbox.ai/1.0 (admin@agent-toolbox.ai)",
+        ...headers,
+      },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     const latency = Date.now() - start;
@@ -86,6 +94,15 @@ async function checkHttp(service: string, url: string): Promise<HealthStatus> {
   }
 }
 
+/** Checks Vectara: if no API key, reports not_configured. */
+async function checkVectara(): Promise<HealthStatus> {
+  const key = process.env["VECTARA_API_KEY"];
+  if (!key) {
+    return status("vectara", "degraded", null, "VECTARA_API_KEY not configured — NLI layer disabled");
+  }
+  return checkHttp("vectara", "https://api.vectara.io", { "x-api-key": key });
+}
+
 /**
  * Runs all dependency health checks in parallel and returns a status for each.
  * Never rejects: a failed check is reported as `down`.
@@ -94,10 +111,11 @@ export async function checkAllServices(): Promise<HealthStatus[]> {
   const checks: Array<() => Promise<HealthStatus>> = [
     checkRedis,
     checkSolana,
-    () => checkHttp("vectara", "https://api.vectara.io"),
-    () => checkHttp("pypi", "https://pypi.org"),
-    () => checkHttp("npm", "https://registry.npmjs.org"),
-    () => checkHttp("crates.io", "https://crates.io"),
+    checkVectara,
+    () => checkHttp("pypi", "https://pypi.org/pypi/numpy/json"),
+    () => checkHttp("npm", "https://registry.npmjs.org/express"),
+    // crates.io requires User-Agent + GET to their API, not bare HEAD to root
+    () => checkHttp("crates.io", "https://crates.io/api/v1/crates/tokio"),
   ];
 
   const results = await Promise.allSettled(checks.map((fn) => fn()));
