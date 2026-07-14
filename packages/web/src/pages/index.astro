@@ -284,52 +284,79 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
       </section>
 
       <!-- PRICING -->
-      <section class="mx-auto max-w-6xl px-6 py-16">
-        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">Start free. Scale on-chain.</h2>
-        <p class="mx-auto mt-3 max-w-2xl text-center text-[#8b949e]">Pay per call in SOL when you're ready.</p>
+      <section class="mx-auto max-w-6xl px-6 py-16" id="pricing">
+        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">Start free. Pay per call in SOL.</h2>
+        <p class="mx-auto mt-3 max-w-2xl text-center text-[#8b949e]">No subscriptions. No invoices. Agents pay autonomously on-chain.</p>
         <div class="mx-auto mt-12 grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-2">
           <!-- Free -->
           <div class="rounded-xl border border-surface-border bg-surface-card p-8">
             <h3 class="text-lg font-semibold">Free</h3>
             <div class="mt-4 flex items-baseline gap-1">
               <span class="text-4xl font-bold">$0</span>
-              <span class="text-[#8b949e]">/ forever</span>
+              <span class="text-[#8b949e]">forever</span>
             </div>
             <ul class="mt-6 space-y-3 text-sm text-[#8b949e]">
-              <li class="flex items-center gap-2"><span class="text-brand">✓</span> 10 calls</li>
+              <li class="flex items-center gap-2"><span class="text-brand">✓</span> 10 calls per IP</li>
               <li class="flex items-center gap-2"><span class="text-brand">✓</span> No auth needed</li>
-              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All endpoints</li>
+              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All 3 endpoints</li>
             </ul>
             <a
               href="#code"
               class="mt-8 inline-flex w-full items-center justify-center rounded-lg bg-brand px-5 py-2.5 font-semibold text-surface transition hover:bg-brand-dark"
             >
-              Get started
+              Try it now
             </a>
           </div>
-          <!-- Pro -->
+          <!-- Pay-as-you-go -->
           <div class="relative rounded-xl border border-brand/40 bg-surface-card p-8">
-            <span class="absolute right-6 top-6 rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand">
-              Coming soon
+            <span class="absolute right-6 top-6 rounded-full bg-[#238636]/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#3fb950]">
+              Live
             </span>
-            <h3 class="text-lg font-semibold">Pro</h3>
+            <h3 class="text-lg font-semibold">Pay-as-you-go</h3>
             <div class="mt-4 flex items-baseline gap-1">
-              <span class="text-4xl font-bold">SOL</span>
-              <span class="text-[#8b949e]">/ per call</span>
+              <span class="text-4xl font-bold text-brand">0.0001</span>
+              <span class="text-[#8b949e]">SOL / call</span>
             </div>
-            <ul class="mt-6 space-y-3 text-sm text-[#8b949e]">
-              <li class="flex items-center gap-2"><span class="text-brand">✓</span> SOL micropayments</li>
-              <li class="flex items-center gap-2"><span class="text-brand">✓</span> Per-call pricing</li>
-              <li class="flex items-center gap-2"><span class="text-brand">✓</span> Priority queue</li>
-              <li class="flex items-center gap-2"><span class="text-brand">✓</span> SLA</li>
+            <ul class="mt-6 space-y-3 text-sm">
+              <li class="flex items-center justify-between border-b border-surface-border pb-2">
+                <span class="font-mono text-xs text-[#8b949e]">/v1/validate/imports</span>
+                <span class="font-mono text-xs text-brand">0.0001 SOL</span>
+              </li>
+              <li class="flex items-center justify-between border-b border-surface-border pb-2">
+                <span class="font-mono text-xs text-[#8b949e]">/v1/verify</span>
+                <span class="font-mono text-xs text-brand">0.0002 SOL</span>
+              </li>
+              <li class="flex items-center justify-between">
+                <span class="font-mono text-xs text-[#8b949e]">/v1/distill</span>
+                <span class="font-mono text-xs text-brand">0.0001 SOL</span>
+              </li>
             </ul>
-            <button
-              disabled
-              class="mt-8 inline-flex w-full cursor-not-allowed items-center justify-center rounded-lg border border-surface-border px-5 py-2.5 font-semibold text-[#6e7681]"
+            <p class="mt-4 text-xs text-[#6e7681]">1 SOL = 10,000 calls &bull; No subscription &bull; Agents pay autonomously</p>
+            <a
+              href="https://github.com/solhammer/agentoolbox#authentication--sol-payments"
+              class="mt-6 inline-flex w-full items-center justify-center rounded-lg border border-brand bg-brand/10 px-5 py-2.5 font-semibold text-brand transition hover:bg-brand hover:text-surface"
             >
-              Coming soon
-            </button>
+              How to pay &rarr;
+            </a>
           </div>
+        </div>
+        <!-- Wallet address -->
+        <div class="mx-auto mt-8 max-w-4xl rounded-xl border border-surface-border bg-surface-card p-5">
+          <div class="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wider text-[#6e7681]">Service Wallet — send SOL here to purchase credits</p>
+              <p class="mt-1 font-mono text-sm text-brand break-all">J9s1xpd73aLQ8to427ftMBxeXpoticSyRCBGq6bFQoCc</p>
+            </div>
+            <a
+              href="https://explorer.solana.com/address/J9s1xpd73aLQ8to427ftMBxeXpoticSyRCBGq6bFQoCc"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="shrink-0 rounded-md border border-surface-border px-3 py-1.5 text-xs font-medium text-[#8b949e] transition hover:border-brand hover:text-white"
+            >
+              View on Explorer &rarr;
+            </a>
+          </div>
+          <p class="mt-3 text-xs text-[#6e7681]">Use your Solana transaction signature as the <code class="rounded bg-surface px-1 font-mono">Bearer</code> token on your first API call. Credits are verified on-chain instantly. Or query <code class="rounded bg-surface px-1 font-mono">GET /v1/pricing</code> for programmatic discovery.</p>
         </div>
       </section>
     </main>

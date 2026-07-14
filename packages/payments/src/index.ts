@@ -6,8 +6,8 @@ import { Connection, PublicKey } from "@solana/web3.js";
  */
 export const SERVICE_WALLET = process.env["SOL_SERVICE_WALLET"] ?? "";
 
-/** Credits per lamport: 1 SOL = 1,000,000,000 lamports = 1000 credits */
-const LAMPORTS_PER_CREDIT = 1_000_000; // 0.001 SOL per credit
+/** Credits per lamport: 1 SOL = 1,000,000,000 lamports = 10,000 credits */
+const LAMPORTS_PER_CREDIT = 100_000; // 0.0001 SOL per credit
 
 /** Default Solana RPC endpoint */
 const DEFAULT_RPC_URL = "https://api.mainnet-beta.solana.com";
@@ -47,7 +47,8 @@ export function lamportsForCredits(credits: number): number {
  * 3. Be < 24 hours old (replay prevention)
  *
  * Returns credits awarded based on SOL amount sent.
- * 1 credit = 0.001 SOL (1,000,000 lamports)
+ * 1 credit = 0.0001 SOL (100,000 lamports)
+ * 1 SOL = 10,000 credits
  */
 export async function verifyPaymentTx(
   txSignature: string,

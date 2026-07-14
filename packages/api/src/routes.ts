@@ -54,4 +54,27 @@ v1.post(
   }
 );
 
+// ── GET /v1/pricing ──────────────────────────────────────────────────────────
+v1.get("/pricing", (c) => {
+  const wallet = process.env["SOL_SERVICE_WALLET"] ?? "";
+  return c.json({
+    wallet,
+    network: "mainnet-beta",
+    endpoints: {
+      "/v1/validate/imports": { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
+      "/v1/verify":           { credits: 2, lamports: 200_000, sol: 0.0002, usdApprox: "~$0.030" },
+      "/v1/distill":          { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
+    },
+    conversion: { solPerCredit: 0.0001, creditsPerSol: 10_000 },
+    freeTier: { calls: 10, auth: false },
+    howToPay: [
+      `1. Send SOL to: ${wallet || "(wallet not configured)"}`,
+      "2. Pass the transaction signature as your Bearer token on the first call",
+      "3. Credits are verified on-chain and added to your account",
+      "4. Subsequent calls deduct credits automatically",
+    ],
+    docs: "https://agent-toolbox.ai/docs#authentication",
+  });
+});
+
 export { v1 };
