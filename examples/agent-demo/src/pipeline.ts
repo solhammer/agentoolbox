@@ -11,7 +11,7 @@
  * Each check is fast and cheap. The full code pipeline costs 0.0007 SOL (~$0.10).
  */
 
-import { AgentoolboxClient } from "@agentoolbox/sdk";
+import { AgentoolboxClient } from "agent-toolbox-sdk";
 
 export type Language = "python" | "javascript" | "typescript" | "rust" | "go";
 

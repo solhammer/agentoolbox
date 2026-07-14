@@ -22,7 +22,7 @@
  *   AGENT_PRIVATE_KEY   Agent's Solana private key (only needed with --paid)
  */
 
-import { AgentoolboxClient } from "@agentoolbox/sdk";
+import { AgentoolboxClient } from "agent-toolbox-sdk";
 import { discoverPricing, buyCredits } from "./payment.js";
 import {
   guardUserInput,

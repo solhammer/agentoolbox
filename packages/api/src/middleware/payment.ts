@@ -27,6 +27,13 @@ const ENDPOINT_COSTS: Record<string, number> = {
   "/v1/scan/injection": 1,
   "/v1/tokens/count": 1,
   "/v1/scan/vulnerabilities": 2,
+  "/v1/finance/units": 1,
+  "/v1/finance/price": 2,
+  "/v1/finance/symbol": 1,
+  "/v1/finance/token/risk": 3,
+  "/v1/finance/slippage": 2,
+  "/v1/finance/order/risk": 5,
+  "/v1/finance/position/check": 1,
 };
 
 /** Free tier: maximum anonymous calls per IP before a paid key is required. */

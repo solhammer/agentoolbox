@@ -5,6 +5,7 @@ import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
 import { paymentMiddleware, getLedgerStats } from "./middleware/payment.js";
 import { v1 } from "./routes.js";
+import { financeRoutes } from "./finance-routes.js";
 import { adminAuth } from "./admin/middleware.js";
 import { admin } from "./admin/routes.js";
 import { appendLog } from "./admin/logger.js";
@@ -93,6 +94,13 @@ app.get("/", (c) =>
       scanInjection: "POST /v1/scan/injection",
       tokensCount: "POST /v1/tokens/count",
       scanVulnerabilities: "POST /v1/scan/vulnerabilities",
+      financeUnits: "POST /v1/finance/units",
+      financePrice: "POST /v1/finance/price",
+      financeSymbol: "POST /v1/finance/symbol",
+      financeTokenRisk: "POST /v1/finance/token/risk",
+      financeSlippage: "POST /v1/finance/slippage",
+      financeOrderRisk: "POST /v1/finance/order/risk",
+      financePositionCheck: "POST /v1/finance/position/check",
     },
     docs: "https://agent-toolbox.ai/docs",
   })
@@ -141,6 +149,7 @@ const requestLogMiddleware: MiddlewareHandler = async (c, next) => {
 app.use("/v1/*", requestLogMiddleware);
 
 app.route("/v1", v1);
+app.route("/v1/finance", financeRoutes);
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.notFound((c) =>
