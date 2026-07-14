@@ -48,10 +48,55 @@ const securityTools = [
   },
 ];
 
+const financeTools = [
+  {
+    title: 'Units Sanity Check',
+    body: 'Prevents the $440k Lobstar-class decimal error. Validates raw on-chain amounts against authoritative token decimals from DexScreener and Solana RPC.',
+    endpoint: 'POST /v1/finance/units',
+    icon: 'calculator',
+  },
+  {
+    title: 'Cross-Source Price Validator',
+    body: 'Fetches the same asset from two independent live sources (CoinGecko + DexScreener for crypto). Blocks if they diverge >2% or if data is stale.',
+    endpoint: 'POST /v1/finance/price',
+    icon: 'trending-up',
+  },
+  {
+    title: 'Symbol / Token Resolver',
+    body: 'Resolves tickers and token addresses to confirmed identities. Flags ambiguous symbols — USDC has 200+ imposters on Solana alone.',
+    endpoint: 'POST /v1/finance/symbol',
+    icon: 'search',
+  },
+  {
+    title: 'Rug Pull Scanner',
+    body: 'One call to RugCheck.xyz + on-chain authority verification. Blocks tokens with active mint authority, no LP lock, or rug score above threshold.',
+    endpoint: 'POST /v1/finance/token/risk',
+    icon: 'triangle-alert',
+  },
+  {
+    title: 'Slippage / Liquidity Guard',
+    body: 'Estimates price impact using DexScreener pool data. Prevents the thin-pool disaster where a $440k order realizes ~$40k due to pool drainage.',
+    endpoint: 'POST /v1/finance/slippage',
+    icon: 'coins',
+  },
+  {
+    title: 'Full Order Risk Scorer',
+    body: 'Pre-trade gate that runs all finance checks in parallel. Returns a composite PASS/FLAG/BLOCK with per-check breakdown and blockedBy field.',
+    endpoint: 'POST /v1/finance/order/risk',
+    icon: 'chart-line',
+  },
+  {
+    title: 'Position Guardian',
+    body: 'Deterministic kill-switch. No API calls — pure arithmetic. Enforces max position size, daily loss limits, leverage caps, and asset allowlists.',
+    endpoint: 'POST /v1/finance/position/check',
+    icon: 'shield-dollar',
+  },
+];
+
 const stats = [
   { value: '19.7%', label: 'of AI-generated packages are hallucinated', source: 'USENIX 2025' },
   { value: '68%', label: 'of multi-agent pipelines contain hallucinations', source: 'IBM 2026' },
-  { value: '<200ms', label: 'average firewall check latency', source: null },
+  { value: '\$440k', label: 'lost by one agent from a single decimal error', source: 'Lobstar 2026' },
 ];
 
 const curlExample = `curl -X POST https://agent-toolbox.ai/v1/validate/imports \\
@@ -144,8 +189,8 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
             AI agent needs
           </h1>
           <p class="mx-auto mt-6 max-w-2xl text-lg text-[#8b949e] sm:text-xl">
-            Catch hallucinated packages. Block injections. Scan secrets. Count tokens.
-            <span class="text-white">Seven tools. One platform. Pay per call in SOL.</span>
+            Catch hallucinations. Block injections. Scan secrets. Guard trades.
+            <span class="text-white">14 tools. One platform. Pay per call in SOL.</span>
           </p>
           <div class="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <a
@@ -194,7 +239,7 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
 
       <!-- FEATURES -->
       <section class="mx-auto max-w-6xl px-6 py-16">
-        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">Seven tools. One platform.</h2>
+        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">14 tools. Two suites. One platform.</h2>
         <p class="mx-auto mt-3 max-w-2xl text-center text-[#8b949e]">
           Composable, agent-callable APIs that verify and improve LLM outputs before they cause damage.
         </p>
@@ -285,6 +330,38 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
                 <h3 class="mt-5 text-base font-semibold">{tool.title}</h3>
                 <p class="mt-2 text-sm leading-relaxed text-[#8b949e]">{tool.body}</p>
                 <span class="mt-5 inline-block rounded-md border border-surface-border bg-surface px-3 py-1.5 font-mono text-xs text-brand">
+                  {tool.endpoint}
+                </span>
+              </div>
+            ))
+          }
+        </div>
+
+        <!-- Finance Protection tools -->
+        <p class="mt-14 text-center text-xs font-semibold uppercase tracking-wider text-[#d29922]">Finance protection</p>
+        <p class="mt-1 text-center text-xs text-[#6e7681]">Backed by real incidents: Lobstar $440k decimal error &middot; Claude Code $1,446 unauthorized sweep</p>
+        <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {
+            financeTools.slice(0, 4).map((tool) => (
+              <div class="group relative overflow-hidden rounded-xl border border-[#9e6a03]/30 bg-surface-card p-5 transition hover:border-[#d29922]/50">
+                <div class="absolute inset-x-0 top-0 h-1 bg-[#d29922]/50"></div>
+                <h3 class="mt-2 text-sm font-semibold">{tool.title}</h3>
+                <p class="mt-1.5 text-xs leading-relaxed text-[#8b949e]">{tool.body}</p>
+                <span class="mt-4 inline-block rounded-md border border-[#9e6a03]/30 bg-surface px-2 py-1 font-mono text-[10px] text-[#d29922]">
+                  {tool.endpoint}
+                </span>
+              </div>
+            ))
+          }
+        </div>
+        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {
+            financeTools.slice(4).map((tool) => (
+              <div class="group relative overflow-hidden rounded-xl border border-[#9e6a03]/30 bg-surface-card p-5 transition hover:border-[#d29922]/50">
+                <div class="absolute inset-x-0 top-0 h-1 bg-[#d29922]/50"></div>
+                <h3 class="mt-2 text-sm font-semibold">{tool.title}</h3>
+                <p class="mt-1.5 text-xs leading-relaxed text-[#8b949e]">{tool.body}</p>
+                <span class="mt-4 inline-block rounded-md border border-[#9e6a03]/30 bg-surface px-2 py-1 font-mono text-[10px] text-[#d29922]">
                   {tool.endpoint}
                 </span>
               </div>
@@ -382,7 +459,7 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
             <ul class="mt-6 space-y-3 text-sm text-[#8b949e]">
               <li class="flex items-center gap-2"><span class="text-brand">✓</span> 10 calls per IP</li>
               <li class="flex items-center gap-2"><span class="text-brand">✓</span> No auth needed</li>
-              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All 7 endpoints</li>
+              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All 14 endpoints</li>
             </ul>
             <a
               href="#code"

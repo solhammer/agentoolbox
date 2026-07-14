@@ -648,3 +648,245 @@ See [`.env.example`](.env.example) for full documentation.
 
 **Deploy:** Railway (Docker) for the API · Cloudflare Pages for the website and admin dashboard.  
 Every push to `main` auto-deploys via GitHub Actions.
+
+---
+
+## Finance Protection Toolkit
+
+Seven additional endpoints that protect AI trading agents from the most common — and most costly — trading failures.
+
+> **Research backing:** Lobstar Wilde decimal error (Feb 2026): agent sent 52M tokens instead of 52k, ~$440k book value → ~$40k realized due to slippage. Claude Code GH#46828: unauthorized $1,446 wallet sweep from scope violation. USENIX 2025: 19.7% of AI-generated packages hallucinated. IBM 2026: 68% of multi-agent pipelines contain hallucinations.
+
+### Service overview
+
+| Endpoint | What it prevents | Credits |
+|---|---|---|
+| `POST /v1/finance/units` | Decimal/units errors (Lobstar-class $440k mistake) | 1 |
+| `POST /v1/finance/price` | Stale and hallucinated prices | 2 |
+| `POST /v1/finance/symbol` | Wrong ticker / token identity confusion | 1 |
+| `POST /v1/finance/token/risk` | Rug pulls, mint authority, frozen tokens | 3 |
+| `POST /v1/finance/slippage` | Thin pool slippage disaster | 2 |
+| `POST /v1/finance/order/risk` | Full pre-trade gate (runs all checks) | 5 |
+| `POST /v1/finance/position/check` | Position limits + kill-switch (no API calls) | 1 |
+
+### `POST /v1/finance/units`
+
+Prevents the most catastrophic class of error: sending 52,439,283 tokens when you meant 52,439 because the agent confused raw on-chain amounts with UI amounts.
+
+```json
+{
+  "tokenAddress": "So11111111111111111111111111111111111111112",
+  "rawAmount": "52439000000",
+  "uiAmount": 52439,
+  "chain": "solana"
+}
+```
+
+```json
+{
+  "verdict": "PASS",
+  "authoritative_decimals": 6,
+  "expected_raw": "52439000000",
+  "actual_raw": "52439000000",
+  "deviation_pct": 0,
+  "score": 0
+}
+```
+
+---
+
+### `POST /v1/finance/price`
+
+Cross-validates a price against two independent live sources. Blocks if they diverge >2% or data is stale.
+
+```json
+{
+  "symbol": "bitcoin",
+  "assetType": "crypto",
+  "proposedPrice": 95000,
+  "maxAgeSeconds": 60
+}
+```
+
+**Sources:** CoinGecko + DexScreener for crypto · yahoo-finance2 + Alpha Vantage for stocks
+
+```json
+{
+  "verdict": "BLOCK",
+  "sources": [
+    { "name": "coingecko", "priceUsd": 106420, "ageSeconds": 12, "available": true },
+    { "name": "dexscreener", "priceUsd": 106380, "ageSeconds": 8, "available": true }
+  ],
+  "consensusPrice": 106400,
+  "proposedPriceDeviation": 10.7,
+  "score": 85
+}
+```
+
+---
+
+### `POST /v1/finance/symbol`
+
+Resolves a symbol/ticker to a confirmed identity. For crypto, always prefer address over symbol — symbols collide.
+
+```json
+{
+  "symbol": "USDC",
+  "assetType": "crypto",
+  "chain": "solana"
+}
+```
+
+```json
+{
+  "found": true,
+  "ambiguous": true,
+  "matches": [
+    { "symbol": "USDC", "name": "USD Coin", "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "liquidity": 450000000 },
+    { "symbol": "USDC", "name": "USDC (bridged)", "address": "FpCMFDFGYotvufJ7HcoLWolNbGhQznvzuBPfgYZnAddp", "liquidity": 2300 }
+  ],
+  "verdict": "FLAG"
+}
+```
+
+---
+
+### `POST /v1/finance/token/risk`
+
+Rug pull scanner for Solana tokens. One call to RugCheck.xyz + on-chain authority verification.
+
+```json
+{
+  "address": "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+  "chain": "solana",
+  "maxRugScore": 60
+}
+```
+
+```json
+{
+  "verdict": "BLOCK",
+  "rugScore": 78,
+  "mintAuthorityActive": true,
+  "freezeAuthorityActive": false,
+  "lpLockedPct": 0,
+  "specificRisks": ["Mint authority not renounced", "No LP locked"],
+  "score": 78
+}
+```
+
+**Blocks on:** mint authority active · freeze authority active · rug score >60 · LP not locked
+
+---
+
+### `POST /v1/finance/slippage`
+
+Estimates price impact using DexScreener pool data. Prevents the thin-pool disaster where a large order drains the pool.
+
+```json
+{
+  "tokenAddress": "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+  "chain": "solana",
+  "tradeUsd": 50000,
+  "maxPriceImpactPct": 2
+}
+```
+
+```json
+{
+  "verdict": "BLOCK",
+  "poolLiquidityUsd": 45000,
+  "estimatedPriceImpactPct": 222,
+  "volume24h": 890000,
+  "washTradingFlag": false,
+  "score": 95
+}
+```
+
+**Price impact formula:** `(tradeUsd / poolLiquidity) × 100 × 2` (constant-product AMM approximation)
+
+---
+
+### `POST /v1/finance/order/risk`
+
+Full pre-trade gate. Runs all applicable checks in parallel and returns a single composite verdict.
+
+```json
+{
+  "tokenAddress": "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+  "assetType": "crypto",
+  "side": "buy",
+  "tradeUsd": 10000,
+  "portfolioValueUsd": 50000,
+  "chain": "solana"
+}
+```
+
+```json
+{
+  "verdict": "BLOCK",
+  "overallScore": 82,
+  "blockedBy": "token/risk",
+  "checks": [
+    { "name": "token/risk", "verdict": "BLOCK", "score": 78 },
+    { "name": "slippage",   "verdict": "PASS",  "score": 8  },
+    { "name": "price",      "verdict": "PASS",  "score": 5  },
+    { "name": "position",   "verdict": "PASS",  "score": 12 }
+  ],
+  "latencyMs": 387
+}
+```
+
+---
+
+### `POST /v1/finance/position/check`
+
+Deterministic position limits — no external API calls, pure arithmetic. The final non-overridable gate.
+
+```json
+{
+  "trade": {
+    "symbol": "SOL",
+    "side": "buy",
+    "tradeUsd": 20000,
+    "assetType": "crypto"
+  },
+  "portfolio": {
+    "totalValueUsd": 50000,
+    "cashUsd": 30000,
+    "dailyPnlUsd": -6000,
+    "openPositions": 3
+  },
+  "rules": {
+    "maxPositionPct": 25,
+    "maxDailyLossPct": 10,
+    "maxOpenPositions": 10
+  }
+}
+```
+
+```json
+{
+  "verdict": "BLOCK",
+  "effectiveUsd": 20000,
+  "positionPct": 40,
+  "violations": [
+    "Position size 40.0% exceeds maximum 25%",
+    "Daily loss $6,000 (12.0%) exceeds maximum 10%"
+  ],
+  "score": 75
+}
+```
+
+**Built-in defaults:** max 25% portfolio per trade · max 10% daily loss · max 10 open positions · max 3× leverage
+
+### Free data sources (all no-key required)
+
+| Service | Used for | Rate limit |
+|---|---|---|
+| CoinGecko | Crypto prices | ~30 req/min |
+| DexScreener | DEX pairs, liquidity, pool data | 300 req/min |
+| yahoo-finance2 | Stock prices | Unlimited (unofficial) |
+| RugCheck.xyz | Solana token safety scores | 1 req/sec |
+| Solana public RPC | On-chain token decimals/authority | ~100 req/10s |
+
