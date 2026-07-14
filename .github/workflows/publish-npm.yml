@@ -42,8 +42,10 @@ jobs:
       - name: Build SDK
         run: pnpm --filter agent-toolbox-sdk build
 
-      - name: Publish to npm (OIDC Trusted Publishing)
+      - name: Publish to npm
         run: npm publish --access public
         working-directory: packages/sdk
-        # NODE_AUTH_TOKEN intentionally omitted — npm CLI uses OIDC id-token automatically
-        # when id-token: write permission is set and Trusted Publishing is configured on npmjs.com
+        env:
+          # Uses bypass-2FA granular access token when set.
+          # Once Trusted Publishing is configured on npmjs.com, this can be removed.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
