@@ -23,6 +23,10 @@ const ENDPOINT_COSTS: Record<string, number> = {
   "/v1/validate/imports": 1,
   "/v1/verify": 2,
   "/v1/distill": 1,
+  "/v1/scan/secrets": 1,
+  "/v1/scan/injection": 1,
+  "/v1/tokens/count": 1,
+  "/v1/scan/vulnerabilities": 2,
 };
 
 /** Free tier: maximum anonymous calls per IP before a paid key is required. */

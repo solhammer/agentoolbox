@@ -89,6 +89,10 @@ app.get("/", (c) =>
       validate: "POST /v1/validate/imports",
       verify: "POST /v1/verify",
       distill: "POST /v1/distill",
+      scanSecrets: "POST /v1/scan/secrets",
+      scanInjection: "POST /v1/scan/injection",
+      tokensCount: "POST /v1/tokens/count",
+      scanVulnerabilities: "POST /v1/scan/vulnerabilities",
     },
     docs: "https://agent-toolbox.ai/docs",
   })
