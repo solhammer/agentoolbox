@@ -38,7 +38,7 @@
   "homepage": "https://agent-toolbox.ai",
   "repository": {
     "type": "git",
-    "url": "https://github.com/solhammer/agentoolbox.git",
+    "url": "git+https://github.com/solhammer/agentoolbox.git",
     "directory": "packages/sdk"
   },
   "bugs": {
