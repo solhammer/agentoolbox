@@ -95,21 +95,24 @@ else console.log(ma+'.'+mi+'.'+(pa+1));
 
 echo ""
 warn "About to bump: $CURRENT_VERSION → $NEW_VERSION"
-if ! $DRY_RUN; then
+
+if $DRY_RUN; then
+  warn "[DRY RUN] Would bump version and modify $SDK_DIR/package.json"
+else
   printf "Confirm? [y/N] "
   read -r CONFIRM
   [ "$CONFIRM" = "y" ] || [ "$CONFIRM" = "Y" ] || { echo "Aborted."; exit 0; }
-fi
 
-# Update version in package.json
-node -e "
+  # Update version in package.json
+  node -e "
 const fs = require('fs');
 const pkg = JSON.parse(fs.readFileSync('./$SDK_DIR/package.json'));
 pkg.version = '$NEW_VERSION';
 fs.writeFileSync('./$SDK_DIR/package.json', JSON.stringify(pkg, null, 2) + '\n');
 console.log('Updated $SDK_DIR/package.json to $NEW_VERSION');
 "
-success "Version bumped to $NEW_VERSION"
+  success "Version bumped to $NEW_VERSION"
+fi
 
 # ── Publish to npm ────────────────────────────────────────────────────────────
 if ! $DRY_RUN; then
