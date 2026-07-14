@@ -1,371 +1,498 @@
-# @agentoolbox/finance
+# @agentoolbox/finance — Finance Protection Toolkit
 
-Finance protection toolkit for AI trading agents. Seven checks that sit between an agent's trading decision and execution — preventing the class of catastrophic failures documented in real incidents.
+Seven APIs that protect AI trading agents from the class of failures that have caused documented, real-world losses.
 
-**Real incidents this prevents:**
-- Lobstar Wilde (Feb 2026): AI agent sent 52,439,283 tokens instead of 52,439. One decimal error. $440k book → $40k realized.
-- Claude Code GH#46828: user said "close it" → agent swept entire $1,446 spot balance to futures, placed 57 ghost grid orders unprompted.
+**Base URL:** `https://api.agent-toolbox.ai`  
+**Pricing discovery:** `GET /v1/pricing`  
+**Free tier:** 10 calls/IP — no auth required  
+**Payment:** SOL micropayments — agents pay autonomously on-chain
 
 ---
 
-## Install
+## Why this exists
 
-```bash
-npm install @agentoolbox/finance
-# or: pnpm add @agentoolbox/finance
-```
+These failures happened before any transaction hit the chain:
 
-Or use via REST API (no install needed):
+| Incident | What happened | Root cause | Loss |
+|---|---|---|---|
+| Lobstar Wilde, Feb 2026, Solana | Agent sent 52,439,283 tokens instead of 52,439 | Confused raw on-chain integer with UI amount | $440k → $40k |
+| Claude Code GH#46828, Apr 2026 | Agent swept entire $1,446 spot balance to futures when user said "close it" | No deterministic scope boundary | $1,446 + fees |
+
+Both are preventable with a validate-before-execute pattern.
+
+---
+
+## Step 0 — Self-discovery
+
+Call this first. It returns the service wallet address and per-endpoint rates so you can pay autonomously without hardcoding anything.
 
 ```bash
 curl https://api.agent-toolbox.ai/v1/pricing
 ```
 
----
-
-## Quick start — protect a trade in 3 lines
-
-```typescript
-import { checkDecimals, checkRug, checkLiquidity, checkPosition } from "@agentoolbox/finance";
-
-// Before any trade — run the checks that matter for your asset
-const decimals = await checkDecimals({ tokenAddress: mint, rawAmount, uiAmount, chain: "solana" });
-const rug     = await checkRug({ address: mint, chain: "solana" });
-const slippage = await checkLiquidity({ tokenAddress: mint, tradeUsd: 5000, chain: "solana" });
-
-if ([decimals, rug, slippage].some(r => r.verdict === "BLOCK")) {
-  throw new Error("Trade blocked: " + [decimals, rug, slippage].find(r => r.verdict === "BLOCK")?.risks[0]?.detail);
+```json
+{
+  "wallet": "8qXedRydihKEETqU64UXtG2sYZaUhwR4HBFz4Suu27CV",
+  "network": "mainnet-beta",
+  "endpoints": {
+    "/v1/finance/units":          { "credits": 1, "sol": 0.0001 },
+    "/v1/finance/price":          { "credits": 2, "sol": 0.0002 },
+    "/v1/finance/symbol":         { "credits": 1, "sol": 0.0001 },
+    "/v1/finance/token/risk":     { "credits": 3, "sol": 0.0003 },
+    "/v1/finance/slippage":       { "credits": 2, "sol": 0.0002 },
+    "/v1/finance/order/risk":     { "credits": 5, "sol": 0.0005 },
+    "/v1/finance/position/check": { "credits": 1, "sol": 0.0001 }
+  },
+  "conversion": { "creditsPerSol": 10000 },
+  "freeTier": { "calls": 10, "auth": false }
 }
 ```
 
 ---
 
-## Architecture — propose → validate → execute
+## Step 1 — Buy credits (autonomous SOL payment)
 
-The correct pattern for AI trading agents:
-
-```
-User/LLM proposes trade
-      ↓
-┌─────────────────────────────────────┐
-│  1. checkDecimals()   < 10ms        │  ← raw amount sanity
-│  2. checkPrice()      ~300ms        │  ← stale/hallucinated price
-│  3. checkRug()        ~500ms        │  ← rug pull / token safety
-│  4. checkLiquidity()  ~200ms        │  ← pool depth / slippage
-│  5. checkPosition()   < 1ms         │  ← portfolio limits (non-overridable)
-└─────────────────────────────────────┘
-      ↓ only if all PASS
-Execute transaction
-```
-
-Steps 1–4 run in parallel. Step 5 (`checkPosition`) is always the final gate and cannot be overridden by any earlier check.
-
----
-
-## API reference
-
-### `checkDecimals(input)` → `DecimalCheckResult`
-
-Prevents the Lobstar-class decimal error. Fetches authoritative `decimals` from DexScreener and Solana RPC, then validates that `rawAmount ≈ round(uiAmount × 10^decimals)`.
+Send SOL to the service wallet. Use the transaction signature as your Bearer token.
 
 ```typescript
-import { checkDecimals } from "@agentoolbox/finance";
+import { Connection, Keypair, SystemProgram, Transaction, sendAndConfirmTransaction, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-const result = await checkDecimals({
-  tokenAddress: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-  rawAmount: "1000000",   // what you're about to send on-chain
-  uiAmount: 1.0,          // what you intend (1 USDC)
-  chain: "solana",
-});
+const wallet = new PublicKey("8qXedRydihKEETqU64UXtG2sYZaUhwR4HBFz4Suu27CV");
+const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
 
-// result.verdict: "PASS" | "FLAG" | "BLOCK"
-// result.authoritative_decimals: 6
-// result.deviation_pct: 0
-```
-
-**Blocks when:** `abs(expectedRaw - actualRaw) / actualRaw > 0.01` (1% tolerance)
-
----
-
-### `checkPrice(input)` → `PriceCheckResult`
-
-Cross-validates a price against two independent live sources. Blocks if sources diverge >2% or data is stale.
-
-```typescript
-import { checkPrice } from "@agentoolbox/finance";
-
-// Crypto — uses CoinGecko + DexScreener
-const result = await checkPrice({
-  symbol: "bitcoin",           // CoinGecko ID
-  tokenAddress: "So1111...",   // optional: DEX address for second source
-  assetType: "crypto",
-  proposedPrice: 95000,        // your agent's claimed price (optional)
-  maxAgeSeconds: 60,
-  divergenceThresholdPct: 2,
-});
-
-// Stock — uses yahoo-finance2
-const stockResult = await checkPrice({
-  symbol: "AAPL",
-  assetType: "stock",
-  proposedPrice: 220,
-  maxAgeSeconds: 3600,
-});
-
-// result.sources: [{ name, priceUsd, ageSeconds, available }]
-// result.consensusPrice: number | null
-// result.proposedPriceDeviation: number | null (% from consensus)
-```
-
-**Blocks when:** sources diverge >threshold, either source is stale, or proposedPrice deviates >5% from consensus
-
----
-
-### `checkRug(input)` → `RugCheckResultExtended`
-
-Rug pull scanner for Solana tokens. Calls RugCheck.xyz + verifies on-chain mint/freeze authority.
-
-```typescript
-import { checkRug } from "@agentoolbox/finance";
-
-const result = await checkRug({
-  address: "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
-  chain: "solana",
-  // Optional overrides (defaults shown):
-  maxRugScore: 60,             // block above this score
-  requireLpLocked: true,        // block if LP not locked
-  blockIfMintAuthority: true,   // block if mint authority active
-  blockIfFreezeAuthority: true, // block if freeze authority active
-});
-
-// result.rugScore: number (0-100, higher = riskier)
-// result.mintAuthorityActive: boolean
-// result.freezeAuthorityActive: boolean
-// result.lpLockedPct: number | null
-// result.specificRisks: string[]
-```
-
-**Blocks when:** mint authority active, freeze authority active, rug score > maxRugScore, LP not locked
-
----
-
-### `checkLiquidity(input)` → `LiquidityCheckResult`
-
-Estimates price impact using DexScreener pool data. Prevents thin-pool disasters.
-
-```typescript
-import { checkLiquidity } from "@agentoolbox/finance";
-
-const result = await checkLiquidity({
-  tokenAddress: "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
-  chain: "solana",
-  tradeUsd: 50000,
-  maxPriceImpactPct: 2,   // block if impact > 2%
-  minLiquidityUsd: 10000, // block if pool < $10k
-});
-
-// result.poolLiquidityUsd: number | null
-// result.estimatedPriceImpactPct: number | null
-// result.washTradingFlag: boolean
-```
-
-**Price impact formula:** `(tradeUsd / poolLiquidityUsd) × 100 × 2` (constant-product AMM approximation)
-
-**Blocks when:** liquidity < minLiquidityUsd OR estimatedPriceImpactPct > maxPriceImpactPct
-
----
-
-### `checkPosition(trade, portfolio, rules?)` → `PositionCheckResult`
-
-Deterministic kill-switch. No external API calls. Pure arithmetic. The final non-overridable gate.
-
-```typescript
-import { checkPosition } from "@agentoolbox/finance";
-
-const result = checkPosition(
-  {
-    symbol: "SOL",
-    side: "buy",
-    tradeUsd: 20000,
-    leverage: 1,
-    assetType: "crypto",
-  },
-  {
-    totalValueUsd: 50000,
-    cashUsd: 30000,
-    dailyPnlUsd: -6000,        // today's P&L
-    openPositions: 3,
-    assetAllocation: { BTC: 15000, ETH: 5000 },
-  },
-  {
-    maxPositionPct: 25,         // max 25% of portfolio per trade
-    maxDailyLossPct: 10,        // halt if daily loss > 10%
-    maxOpenPositions: 10,
-    maxLeverage: 3,
-    allowedAssets: ["SOL", "BTC", "ETH"],  // allowlist (omit to allow all)
-    killSwitch: false,          // set to true to block ALL trades
-    maxSingleTradeUsd: 30000,
-  }
+const tx = new Transaction().add(
+  SystemProgram.transfer({ fromPubkey: agentKeypair.publicKey, toPubkey: wallet, lamports: 0.1 * LAMPORTS_PER_SOL })
 );
-
-// result.verdict: "PASS" | "FLAG" | "BLOCK"
-// result.violations: string[]  (human-readable reasons)
-// result.effectiveUsd: number  (tradeUsd * leverage)
-// result.positionPct: number | null
+const txSig = await sendAndConfirmTransaction(connection, tx, [agentKeypair]);
+// txSig is now your Bearer token — use it on every subsequent call
 ```
 
-**Default rules when omitted:** maxPositionPct: 25, maxDailyLossPct: 10, maxOpenPositions: 10, maxLeverage: 3
+**0.1 SOL = 1,000 credits = 200 order/risk checks**
 
 ---
 
-## Full integration example
+## Decision guide — which check to call when
 
-```typescript
-import {
-  checkDecimals, checkPrice, checkRug,
-  checkLiquidity, checkPosition,
-  type GuardianRules, type PortfolioSnapshot
-} from "@agentoolbox/finance";
+| Situation | Call | Reason |
+|---|---|---|
+| About to build a Solana transaction | `/v1/finance/units` first | Catches the $440k Lobstar decimal error |
+| LLM gave you a price to trade at | `/v1/finance/price` | Validates against 2 live sources |
+| Uncertain which token address to use | `/v1/finance/symbol` | USDC has 200+ imposters on Solana |
+| Considering a new/unknown token | `/v1/finance/token/risk` | Rug pull + mint authority check |
+| Trade size feels large | `/v1/finance/slippage` | Pool may not absorb your order |
+| Pre-trade gate (run everything) | `/v1/finance/order/risk` | One call, all checks, composite verdict |
+| Validating trade against portfolio rules | `/v1/finance/position/check` | Kill-switch + limits, no network calls |
 
-const PORTFOLIO: PortfolioSnapshot = {
-  totalValueUsd: 50000,
-  cashUsd: 20000,
-  dailyPnlUsd: -1200,
-  openPositions: 2,
-};
+**Recommended pipeline for Solana token trades:**
 
-const RULES: GuardianRules = {
-  maxPositionPct: 20,
-  maxDailyLossPct: 8,
-  maxLeverage: 2,
-  killSwitch: false,
-};
-
-async function validateTrade(params: {
-  tokenMint: string;
-  rawAmount: string;
-  uiAmount: number;
-  tradeUsd: number;
-  chain: "solana";
-}) {
-  const { tokenMint, rawAmount, uiAmount, tradeUsd, chain } = params;
-
-  // Run data-integrity checks in parallel (fastest first)
-  const [decimals, price, rug, liquidity] = await Promise.all([
-    checkDecimals({ tokenAddress: tokenMint, rawAmount, uiAmount, chain }),
-    checkPrice({ tokenAddress: tokenMint, assetType: "crypto" }),
-    checkRug({ address: tokenMint, chain }),
-    checkLiquidity({ tokenAddress: tokenMint, tradeUsd, chain }),
-  ]);
-
-  const checks = { decimals, price, rug, liquidity };
-
-  // Find any blocker
-  const blocker = Object.entries(checks).find(([, r]) => r.verdict === "BLOCK");
-  if (blocker) {
-    const [name, result] = blocker;
-    throw new Error(`Trade BLOCKED at ${name}: ${result.risks[0]?.detail ?? "unknown reason"}`);
-  }
-
-  // Final gate — deterministic, no API calls
-  const position = checkPosition(
-    { symbol: tokenMint, side: "buy", tradeUsd, assetType: "crypto" },
-    PORTFOLIO,
-    RULES
-  );
-
-  if (position.verdict === "BLOCK") {
-    throw new Error(`Trade BLOCKED by position limits: ${position.violations.join(", ")}`);
-  }
-
-  // Log flags even if we proceed
-  const flagged = Object.entries(checks).filter(([, r]) => r.verdict === "FLAG");
-  if (flagged.length > 0) {
-    console.warn("Trade flags:", flagged.map(([name]) => name).join(", "));
-  }
-
-  return { passed: true, checks, position };
-}
 ```
+1. /v1/finance/units       — decimal sanity         < 10ms
+2. /v1/finance/token/risk  — rug pull safety        ~500ms   ┐
+3. /v1/finance/slippage    — pool depth             ~200ms   ├─ parallel
+4. /v1/finance/price       — price validation       ~300ms   ┘
+5. /v1/finance/position/check — deterministic gate  < 1ms   ← always last
+```
+
+Or use `/v1/finance/order/risk` to do steps 2–5 in a single call.
 
 ---
 
-## Using via REST API (no install)
+## Understanding verdicts
 
-All checks are available as REST endpoints on `api.agent-toolbox.ai`. This is the recommended approach for non-TypeScript agents or when running in constrained environments.
+Every endpoint returns one of three verdicts:
 
-**Discover pricing first:**
+| Verdict | Meaning | Agent action |
+|---|---|---|
+| `PASS` | No issues found — safe to proceed | Continue with the trade |
+| `FLAG` | Potential issue — data is uncertain or borderline | Log the flag, proceed with caution or escalate |
+| `BLOCK` | Confirmed problem — do not proceed | Reject the trade. Check `risks[].detail` for the reason |
+
+When the verdict is `BLOCK`, the `risks` array contains the specific findings with `detail` fields explaining exactly what was wrong.
+
+---
+
+## API Reference
+
+### `POST /v1/finance/units` — Decimal sanity check
+
+**The Lobstar check.** Validates that your raw on-chain amount matches the intended human amount given the token's authoritative decimals.
 
 ```bash
-curl https://api.agent-toolbox.ai/v1/pricing
-```
-
-**Run the full order risk check:**
-
-```bash
-curl -X POST https://api.agent-toolbox.ai/v1/finance/order/risk \
+curl -X POST https://api.agent-toolbox.ai/v1/finance/units \
+  -H "Authorization: Bearer $TX_SIG" \
   -H "Content-Type: application/json" \
   -d '{
     "tokenAddress": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "rawAmount": "52439000000",
+    "uiAmount": 52439,
+    "chain": "solana"
+  }'
+```
+
+```json
+{
+  "verdict": "PASS",
+  "authoritative_decimals": 6,
+  "expected_raw": "52439000000",
+  "actual_raw": "52439000000",
+  "deviation_pct": 0,
+  "risks": [],
+  "latencyMs": 8
+}
+```
+
+**What it blocks:** `rawAmount` deviates from `round(uiAmount × 10^decimals)` by more than 1%.
+
+| Field | Type | Description |
+|---|---|---|
+| `tokenAddress` | string | Mint address (Solana) or contract address (EVM) |
+| `rawAmount` | string | The integer amount as it will appear on-chain |
+| `uiAmount` | number | The human-readable amount you intend to send |
+| `chain` | string | `"solana"` · `"ethereum"` · `"bsc"` · `"polygon"` |
+
+---
+
+### `POST /v1/finance/price` — Cross-source price validation
+
+Fetches the same asset from two independent live sources and blocks if they diverge or the data is stale.
+
+```bash
+curl -X POST https://api.agent-toolbox.ai/v1/finance/price \
+  -H "Authorization: Bearer $TX_SIG" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "symbol": "solana",
+    "tokenAddress": "So11111111111111111111111111111111111111112",
+    "assetType": "crypto",
+    "proposedPrice": 180,
+    "maxAgeSeconds": 60
+  }'
+```
+
+```json
+{
+  "verdict": "BLOCK",
+  "sources": [
+    { "name": "coingecko",   "priceUsd": 148.32, "ageSeconds": 12, "available": true },
+    { "name": "dexscreener", "priceUsd": 148.89, "ageSeconds": 4,  "available": true }
+  ],
+  "consensusPrice": 148.60,
+  "proposedPriceDeviation": 21.1,
+  "risks": [{ "type": "proposed_price_deviation", "severity": "critical", "detail": "Proposed $180.00 deviates 21.1% from consensus $148.60" }],
+  "latencyMs": 287
+}
+```
+
+**What it blocks:**
+- Two sources diverge by more than `divergenceThresholdPct` (default 2%)
+- Any source data is older than `maxAgeSeconds` (default 60s for crypto, 3600s for stocks)
+- `proposedPrice` deviates >5% from consensus (BLOCK) or >2% (FLAG)
+
+**Sources by asset type:**
+- Crypto: CoinGecko + DexScreener
+- Stock: yahoo-finance2 (single source → always FLAG or BLOCK)
+
+---
+
+### `POST /v1/finance/symbol` — Token/ticker identity resolver
+
+Resolves a symbol to confirmed identity. Critical for crypto — symbols collide (USDC has 200+ imposters on Solana).
+
+```bash
+curl -X POST https://api.agent-toolbox.ai/v1/finance/symbol \
+  -H "Authorization: Bearer $TX_SIG" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "symbol": "USDC",
+    "assetType": "crypto",
+    "chain": "solana"
+  }'
+```
+
+```json
+{
+  "found": true,
+  "ambiguous": true,
+  "verdict": "FLAG",
+  "matches": [
+    { "symbol": "USDC", "name": "USD Coin", "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "liquidity": 450000000 },
+    { "symbol": "USDC", "name": "USDC (Wormhole)", "address": "HJiQv33nKujz9...bFQoCc", "liquidity": 2300 }
+  ]
+}
+```
+
+**Rule:** Always use token address, not symbol, for Solana. Use this endpoint to confirm the address maps to the expected name before trading.
+
+---
+
+### `POST /v1/finance/token/risk` — Rug pull scanner
+
+One call to RugCheck.xyz + on-chain verification of mint/freeze authority. Blocks the most common rug pull indicators.
+
+```bash
+curl -X POST https://api.agent-toolbox.ai/v1/finance/token/risk \
+  -H "Authorization: Bearer $TX_SIG" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "address": "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+    "chain": "solana",
+    "maxRugScore": 60
+  }'
+```
+
+```json
+{
+  "verdict": "BLOCK",
+  "rugScore": 78,
+  "mintAuthorityActive": true,
+  "freezeAuthorityActive": false,
+  "lpLockedPct": 0,
+  "specificRisks": [
+    "Mint authority is not renounced — token supply can be inflated",
+    "No LP locked — liquidity can be withdrawn instantly"
+  ],
+  "risks": [
+    { "type": "mint_authority_active", "severity": "critical", "detail": "Mint authority is not renounced" },
+    { "type": "lp_not_locked",        "severity": "critical", "detail": "0% of LP is locked" }
+  ],
+  "latencyMs": 412
+}
+```
+
+**What it blocks by default:**
+- `mintAuthorityActive: true` — token creator can print unlimited supply
+- `freezeAuthorityActive: true` — creator can freeze your tokens
+- `rugScore > 60` — RugCheck's normalized risk score
+- LP not locked (`lpLockedPct === 0` + `requireLpLocked: true`)
+
+**Configurable thresholds:**
+
+| Parameter | Default | Description |
+|---|---|---|
+| `maxRugScore` | 60 | Block above this score (0–100) |
+| `requireLpLocked` | true | Block if LP not locked |
+| `blockIfMintAuthority` | true | Block if mint authority active |
+| `blockIfFreezeAuthority` | true | Block if freeze authority active |
+
+---
+
+### `POST /v1/finance/slippage` — Liquidity & slippage guard
+
+Estimates price impact using DexScreener pool data. Prevents the thin-pool disaster where a large order drains the pool.
+
+```bash
+curl -X POST https://api.agent-toolbox.ai/v1/finance/slippage \
+  -H "Authorization: Bearer $TX_SIG" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tokenAddress": "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+    "chain": "solana",
+    "tradeUsd": 50000,
+    "maxPriceImpactPct": 2
+  }'
+```
+
+```json
+{
+  "verdict": "BLOCK",
+  "poolLiquidityUsd": 45000,
+  "estimatedPriceImpactPct": 222.2,
+  "volume24h": 890000,
+  "washTradingFlag": false,
+  "risks": [
+    { "type": "excessive_price_impact", "severity": "critical",
+      "detail": "Estimated 222.2% price impact exceeds 2% threshold on $45,000 pool" }
+  ],
+  "latencyMs": 184
+}
+```
+
+**Price impact formula:** `(tradeUsd / poolLiquidity) × 100 × 2`
+This is the constant-product AMM approximation (x×y=k). For a $50k trade on a $45k pool: `(50000/45000) × 100 × 2 = 222%`.
+
+**Wash trading detection:** FLAGS when `volume24h / poolLiquidityUsd > 10` (implausible ratio suggesting artificial volume).
+
+---
+
+### `POST /v1/finance/order/risk` — Full pre-trade gate
+
+Runs all applicable checks in parallel and returns a single composite verdict. One call replaces steps 2–5 of the pipeline.
+
+```bash
+curl -X POST https://api.agent-toolbox.ai/v1/finance/order/risk \
+  -H "Authorization: Bearer $TX_SIG" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tokenAddress": "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
     "assetType": "crypto",
     "side": "buy",
-    "tradeUsd": 5000,
+    "tradeUsd": 10000,
     "portfolioValueUsd": 50000,
     "chain": "solana"
   }'
 ```
 
-**Response:**
-
 ```json
 {
-  "verdict": "PASS",
-  "overallScore": 12,
-  "blockedBy": null,
+  "verdict": "BLOCK",
+  "overallScore": 82,
+  "blockedBy": "token/risk",
   "checks": [
-    { "name": "token/risk", "verdict": "PASS", "score": 8  },
-    { "name": "slippage",   "verdict": "PASS", "score": 4  },
-    { "name": "price",      "verdict": "PASS", "score": 0  },
-    { "name": "position",   "verdict": "PASS", "score": 0  }
+    { "name": "token/risk", "verdict": "BLOCK", "score": 78, "risks": [{ "type": "mint_authority_active" }] },
+    { "name": "slippage",   "verdict": "PASS",  "score": 8  },
+    { "name": "price",      "verdict": "FLAG",  "score": 15 },
+    { "name": "position",   "verdict": "PASS",  "score": 0  }
   ],
-  "latencyMs": 312
+  "latencyMs": 521
 }
 ```
 
-**Authentication:** Pass a Solana transaction signature as `Authorization: Bearer <tx-sig>` after buying credits. Free tier: 10 calls/IP with no auth.
-
-**REST endpoints:**
-
-| Endpoint | Equivalent function | Credits |
-|---|---|---|
-| `POST /v1/finance/units` | `checkDecimals()` | 1 |
-| `POST /v1/finance/price` | `checkPrice()` | 2 |
-| `POST /v1/finance/symbol` | (symbol resolver) | 1 |
-| `POST /v1/finance/token/risk` | `checkRug()` | 3 |
-| `POST /v1/finance/slippage` | `checkLiquidity()` | 2 |
-| `POST /v1/finance/order/risk` | all combined | 5 |
-| `POST /v1/finance/position/check` | `checkPosition()` | 1 |
+**Verdict aggregation:** Worst check verdict wins. `blockedBy` names the check that caused the BLOCK. Agents should inspect `checks[].risks` for the specific reason.
 
 ---
 
-## Data sources
+### `POST /v1/finance/position/check` — Deterministic position guardian
 
-All free, no API key required:
+The final non-overridable gate. No external API calls — pure arithmetic. Enforces hard rules on a proposed trade. This is the Claude Code GH#46828 fix.
 
-| Source | Used for | Rate limit |
-|---|---|---|
-| [CoinGecko](https://coingecko.com) | Crypto prices | ~30 req/min |
-| [DexScreener](https://dexscreener.com) | DEX pairs, pool liquidity, token addresses | 300 req/min |
-| [yahoo-finance2](https://github.com/gadicc/yahoo-finance2) | Stock prices | Unlimited (unofficial) |
-| [RugCheck.xyz](https://rugcheck.xyz) | Solana token safety scores | 1 req/sec |
-| Solana public RPC | On-chain token decimals and authority | ~100 req/10s |
+```bash
+curl -X POST https://api.agent-toolbox.ai/v1/finance/position/check \
+  -H "Authorization: Bearer $TX_SIG" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "trade": {
+      "symbol": "SOL",
+      "side": "buy",
+      "tradeUsd": 20000,
+      "leverage": 1,
+      "assetType": "crypto"
+    },
+    "portfolio": {
+      "totalValueUsd": 50000,
+      "cashUsd": 30000,
+      "dailyPnlUsd": -6000,
+      "openPositions": 3
+    },
+    "rules": {
+      "maxPositionPct": 25,
+      "maxDailyLossPct": 10,
+      "maxOpenPositions": 10,
+      "maxLeverage": 3,
+      "allowedAssets": ["SOL", "BTC", "ETH"],
+      "killSwitch": false,
+      "maxSingleTradeUsd": 25000
+    }
+  }'
+```
 
-Optional paid upgrades: Helius (higher Solana RPC rate limits), Alpha Vantage (stock data), GoPlus (EVM token security).
+```json
+{
+  "verdict": "BLOCK",
+  "effectiveUsd": 20000,
+  "positionPct": 40.0,
+  "violations": [
+    "max_position_pct",
+    "max_daily_loss"
+  ],
+  "risks": [
+    { "type": "max_position_pct", "severity": "critical",
+      "detail": "Position 40.0% exceeds maximum 25%" },
+    { "type": "max_daily_loss",  "severity": "critical",
+      "detail": "Daily loss $6,000 (12.0%) exceeds maximum 10%" }
+  ],
+  "score": 75,
+  "latencyMs": 0
+}
+```
+
+**Default rules (when `rules` is omitted):**
+
+| Rule | Default |
+|---|---|
+| `maxPositionPct` | 25% of portfolio |
+| `maxDailyLossPct` | 10% |
+| `maxOpenPositions` | 10 |
+| `maxLeverage` | 3× |
+| `allowedAssets` | all (no restriction) |
+| `killSwitch` | false |
+| `maxSingleTradeUsd` | unlimited |
+
+**Set `killSwitch: true` to block ALL trades immediately** — useful for emergency halt or end-of-session cleanup.
 
 ---
 
-## License
+## Error handling
 
-MIT — part of [agent-toolbox.ai](https://agent-toolbox.ai)
+| HTTP | `error` | Action |
+|---|---|---|
+| `402` | `free_tier_exhausted` | Send SOL to wallet, use tx sig as Bearer |
+| `402` | `insufficient_credits` | Top up by sending more SOL |
+| `401` | `invalid_token` | Malformed Bearer token |
+| `400` | validation error | Fix the request body |
+| `5xx` | server error | Retry with exponential backoff |
 
-GitHub: [solhammer/agentoolbox](https://github.com/solhammer/agentoolbox)
+All errors return `{ "error": "<code>", "message": "<detail>" }`.
+
+---
+
+## Data sources — all free, no API key required
+
+| Source | Endpoints | Rate limit |
+|---|---|---|
+| [CoinGecko](https://coingecko.com) | `/v1/finance/price` (crypto primary) | ~30 req/min |
+| [DexScreener](https://dexscreener.com) | `/v1/finance/price`, `/v1/finance/slippage`, `/v1/finance/symbol` | 300 req/min |
+| [yahoo-finance2](https://github.com/gadicc/yahoo-finance2) | `/v1/finance/price` (stocks) | Unlimited (unofficial) |
+| [RugCheck.xyz](https://rugcheck.xyz) | `/v1/finance/token/risk` | 1 req/sec |
+| Solana public RPC | `/v1/finance/units`, `/v1/finance/token/risk` | ~100 req/10s |
+
+Optional upgrades for higher rate limits: set `SOL_RPC_URL` (Helius/QuickNode) and `VECTARA_API_KEY` on the server.
+
+---
+
+## TypeScript / JavaScript integration
+
+```bash
+npm install agent-toolbox-sdk
+```
+
+```typescript
+import { AgentoolboxClient } from "agent-toolbox-sdk";
+
+const client = new AgentoolboxClient({
+  baseUrl: "https://api.agent-toolbox.ai",
+  apiKey: txSignature,  // Solana tx sig from your credit purchase
+});
+
+// Pre-trade pipeline
+const order = await client.scanVulnerabilities({ packages: [], language: "python" }); // unused here
+const risk = await fetch("https://api.agent-toolbox.ai/v1/finance/order/risk", {
+  method: "POST",
+  headers: { "Authorization": `Bearer ${txSignature}`, "Content-Type": "application/json" },
+  body: JSON.stringify({ tokenAddress: mint, assetType: "crypto", side: "buy", tradeUsd, chain: "solana" }),
+}).then(r => r.json());
+
+if (risk.verdict === "BLOCK") {
+  throw new Error(`Trade blocked by ${risk.blockedBy}: ${risk.checks.find(c => c.verdict === "BLOCK")?.risks[0]?.detail}`);
+}
+```
+
+Full TypeScript library (direct imports, no API calls for `checkPosition`):
+```bash
+npm install @agentoolbox/finance
+```
+
+See the [TypeScript integration guide](README.md#full-integration-example) for direct function imports.
+
+---
+
+## Self-hosting
+
+```bash
+git clone https://github.com/solhammer/agentoolbox
+cd agentoolbox && cp .env.example .env && pnpm install && pnpm dev
+# Finance endpoints available at http://localhost:3000/v1/finance/*
+```
+
+Set `SOL_SERVICE_WALLET` in `.env` to your own Solana wallet address to receive payments.
+
+MIT license · [agent-toolbox.ai](https://agent-toolbox.ai) · [solhammer/agentoolbox](https://github.com/solhammer/agentoolbox)
