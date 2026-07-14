@@ -7,6 +7,9 @@ on:
       version:
         description: 'Version to publish (e.g. 1.0.1)'
         required: true
+      otp:
+        description: '6-digit OTP from your authenticator app (only needed until Trusted Publishing is configured)'
+        required: false
   push:
     tags:
       - 'sdk-v*'
@@ -39,8 +42,13 @@ jobs:
       - name: Build SDK
         run: pnpm --filter agent-toolbox-sdk build
 
-      - name: Publish to npm (OIDC trusted publishing — no token needed)
-        run: npm publish --access public
+      - name: Publish to npm
+        run: |
+          if [ -n "${{ github.event.inputs.otp }}" ]; then
+            npm publish --access public --otp=${{ github.event.inputs.otp }}
+          else
+            npm publish --access public
+          fi
         working-directory: packages/sdk
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}  # Fallback if trusted publishing not yet configured
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
