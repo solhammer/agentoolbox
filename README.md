@@ -890,3 +890,68 @@ Deterministic position limits — no external API calls, pure arithmetic. The fi
 | RugCheck.xyz | Solana token safety scores | 1 req/sec |
 | Solana public RPC | On-chain token decimals/authority | ~100 req/10s |
 
+
+---
+
+## Finance Toolkit — Developer Integration Guide
+
+### The pattern: propose → validate → execute
+
+All trading agent failures share the same root cause: the agent proposed a trade and executed it without validating. The correct architecture:
+
+```
+LLM proposes trade
+      ↓
+[ 1. checkDecimals   — raw amount sanity        < 10ms  ]
+[ 2. checkPrice      — stale/hallucinated price ~300ms  ]  → run in parallel
+[ 3. checkRug        — rug pull / mint authority ~500ms  ]
+[ 4. checkLiquidity  — pool depth / slippage    ~200ms  ]
+      ↓ only if all PASS/FLAG
+[ 5. checkPosition   — portfolio limits          < 1ms  ]  ← non-overridable gate
+      ↓ only if PASS
+Execute transaction
+```
+
+### Install
+
+```bash
+npm install agent-toolbox-sdk     # REST client for all 14 endpoints
+npm install @agentoolbox/finance  # TypeScript library (direct, no API calls for checkPosition)
+```
+
+### Minimal Solana trading guard
+
+```typescript
+import { checkDecimals, checkRug, checkLiquidity, checkPosition } from "@agentoolbox/finance";
+
+async function guard(tokenMint: string, rawAmount: string, uiAmount: number, tradeUsd: number) {
+  const [decimals, rug, liquidity] = await Promise.all([
+    checkDecimals({ tokenAddress: tokenMint, rawAmount, uiAmount, chain: "solana" }),
+    checkRug({ address: tokenMint, chain: "solana" }),
+    checkLiquidity({ tokenAddress: tokenMint, tradeUsd, chain: "solana" }),
+  ]);
+
+  for (const check of [decimals, rug, liquidity]) {
+    if (check.verdict === "BLOCK") throw new Error("Trade blocked: " + check.risks[0]?.detail);
+  }
+
+  const position = checkPosition(
+    { symbol: tokenMint, side: "buy", tradeUsd, assetType: "crypto" },
+    { totalValueUsd: 50000, cashUsd: 20000 }
+  );
+  if (position.verdict === "BLOCK") throw new Error("Position limit: " + position.violations[0]);
+}
+```
+
+### Via REST (any language)
+
+```bash
+# Single call — runs all finance checks in parallel
+curl -X POST https://api.agent-toolbox.ai/v1/finance/order/risk \
+  -H "Content-Type: application/json" \
+  -d '{"tokenAddress":"<mint>","assetType":"crypto","side":"buy","tradeUsd":5000,"chain":"solana"}'
+
+# Response: { "verdict": "PASS"|"FLAG"|"BLOCK", "blockedBy": null|"token/risk"|..., "checks": [...] }
+```
+
+Free tier: 10 calls/IP · Paid: 0.0001–0.0005 SOL/call · Full docs: `packages/finance/README.md`
