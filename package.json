@@ -7,6 +7,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test",
+    "test:api": "vitest run tests/api-integration.test.ts",
     "dev": "pnpm --filter api dev",
     "dev:mcp": "pnpm --filter mcp dev",
     "lint": "pnpm -r lint",
