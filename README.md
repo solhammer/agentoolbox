@@ -1,292 +1,122 @@
 # agent-toolbox.ai
 
-AI agent quality utility — hallucination firewall, import validator, context distiller.
+The quality layer for AI agents. Three API services that verify and improve LLM outputs before they cause damage — callable by any agent, paid autonomously in SOL.
 
-A set of agent-callable REST + MCP services that verify and improve LLM outputs before they cause damage. Pay per call in SOL (Solana micropayments).
+**API:** `https://api.agent-toolbox.ai`  
+**Website:** [agent-toolbox.ai](https://agent-toolbox.ai)  
+**GitHub:** [solhammer/agentoolbox](https://github.com/solhammer/agentoolbox)
 
-**Live:** [agent-toolbox.ai](https://agent-toolbox.ai) · **API:** `https://api.agent-toolbox.ai`
+---
 
-## Services
+## What it does
 
-| Endpoint | What it does | Latency |
+| Service | Endpoint | What it catches |
 |---|---|---|
-| `POST /v1/validate/imports` | Checks every import in AI-generated code against live registries (PyPI, npm, crates.io, Go). Catches hallucinated package names before they execute. | <200ms |
-| `POST /v1/verify` | Hallucination firewall. Returns `PASS`, `FLAG`, or `BLOCK` with a tamper-evident SHA-256 certificate. Checks: packages, URLs, citations (DOI/arXiv), numeric contradictions, NLI consistency. | <500ms |
-| `POST /v1/distill` | Compresses a conversation context to a target token budget using TF-IDF importance scoring. Pluggable LLMLingua-2 endpoint via `LLMLINGUA_URL`. | <50ms |
-
-## Contents
-
-- [Local development](#local-development)
-- [Environment variables](#environment-variables)
-- [Deployment](#deployment)
-  - [API — Railway (recommended)](#api--railway-recommended)
-  - [API — Docker](#api--docker)
-  - [Website — Cloudflare Pages](#website--cloudflare-pages)
-  - [DNS configuration](#dns-configuration)
-- [API reference](#api-reference)
-- [Authentication & payments](#authentication--sol-payments)
-- [MCP integration](#use-as-an-mcp-tool-claude--warp--cursor)
-- [SDK](#use-the-sdk)
-- [Project structure](#project-structure)
-- [Roadmap](#roadmap)
+| **Package Validator** | `POST /v1/validate/imports` | Hallucinated package names in AI-generated code — checked live against PyPI, npm, crates.io, and Go |
+| **Hallucination Firewall** | `POST /v1/verify` | Bad packages, dead URLs, malformed citations (DOI/arXiv), numeric contradictions. Returns `PASS`, `FLAG`, or `BLOCK` with a SHA-256 certificate |
+| **Context Distiller** | `POST /v1/distill` | Bloated agent context windows — compressed to a token budget using TF-IDF importance scoring |
 
 ---
 
-## Local development
+## Quick start (30 seconds)
 
-**Prerequisites:** Node.js 20+, pnpm 9+
+No signup. No API key. First 10 calls per IP are free.
 
-```bash
-# Install pnpm if needed
-npm install -g pnpm@9
-
-# Install dependencies
-pnpm install
-
-# Copy environment variables template
-cp .env.example .env
-# Edit .env and fill in at minimum SOL_SERVICE_WALLET
-
-# Run the API server (hot-reload)
-pnpm dev
-# → http://localhost:3000
-
-# Run tests
-pnpm test
-
-# Run the MCP server (stdio)
-pnpm dev:mcp
-
-# Preview the website locally
-pnpm --filter @agentoolbox/web dev
-# → http://localhost:4321
-```
-
----
-
-## Environment variables
-
-Copy `.env.example` to `.env` for local development. In production, set these in your hosting platform's dashboard.
-
-### Required
-
-| Variable | Description |
-|---|---|
-| `PORT` | Port the API server listens on. Default: `3000`. |
-| `SOL_SERVICE_WALLET` | Your Solana wallet public key. Agents send SOL here to buy credits. Generate one with `solana-keygen new` or any Solana wallet. |
-
-### Optional — Solana RPC
-
-| Variable | Description | Default |
-|---|---|---|
-| `SOL_RPC_URL` | Solana RPC endpoint for on-chain payment verification. The public endpoint is heavily rate-limited in production; use [Helius](https://helius.dev) (free: 100k req/day) or [QuickNode](https://quicknode.com). | `https://api.mainnet-beta.solana.com` |
-
-### Optional — Persistence
-
-| Variable | Description | Default |
-|---|---|---|
-| `REDIS_URL` | Redis connection URL. When set, the credit ledger is persisted across restarts and shared across multiple API instances. When unset, an in-memory Map is used (state lost on restart). Format: `redis://user:password@host:6379`. | in-memory |
-
-### Optional — NLI hallucination detection
-
-| Variable | Description | Default |
-|---|---|---|
-| `VECTARA_API_KEY` | API key for the [Vectara HHEM v2](https://vectara.com) factual consistency API. Enables Layer 5 of the hallucination firewall (NLI scoring for natural language outputs against source context). Without this, the firewall runs deterministic checks only. Free tier available. | disabled |
-
-### Optional — Context distiller
-
-| Variable | Description | Default |
-|---|---|---|
-| `LLMLINGUA_URL` | URL of a [LLMLingua-2](https://github.com/microsoft/LLMLingua) compatible compression endpoint. When set, the `/v1/distill` endpoint delegates to this service instead of the built-in TF-IDF scorer. Example: `http://localhost:8000/compress`. | TF-IDF scorer |
-
-### Full `.env` example
+### Validate AI-generated imports
 
 ```bash
-# Server
-PORT=3000
-NODE_ENV=production
-
-# Solana payments (required for paid tier)
-SOL_SERVICE_WALLET=YourSolanaWalletPublicKeyHere
-SOL_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_HELIUS_KEY
-
-# Persistence
-REDIS_URL=redis://default:password@redis.railway.internal:6379
-
-# NLI layer
-VECTARA_API_KEY=your-vectara-api-key
-
-# Advanced distiller
-LLMLINGUA_URL=http://llmlingua-service:8000/compress
+curl -X POST https://api.agent-toolbox.ai/v1/validate/imports \
+  -H "Content-Type: application/json" \
+  -d '{
+    "language": "python",
+    "code": "import numpy\nfrom superlogger import magic_log\nimport pandas"
+  }'
 ```
 
----
+```json
+{
+  "valid": [{ "name": "numpy" }, { "name": "pandas" }],
+  "hallucinated": [{ "name": "superlogger", "evidence": "Not found on PyPI" }],
+  "hallucinationRate": 0.33,
+  "latencyMs": 187
+}
+```
 
-## Deployment
-
-### API — Railway (recommended)
-
-Railway handles the Node.js server and Redis with minimal configuration.
-
-**1. Push the repo to GitHub**
+### Run the hallucination firewall
 
 ```bash
-git init && git add . && git commit -m "Initial commit"
-git remote add origin https://github.com/YOUR_ORG/agentoolbox.git
-git push -u origin main
+curl -X POST https://api.agent-toolbox.ai/v1/verify \
+  -H "Content-Type: application/json" \
+  -d '{
+    "outputType": "code",
+    "language": "python",
+    "llmResponse": "import numpy\nfrom ghostpkg import magic",
+    "enforcementMode": "block"
+  }'
 ```
 
-**2. Create a Railway project**
-
-1. Go to [railway.app](https://railway.app) → New Project → Deploy from GitHub repo
-2. Select this repository. Railway detects the `Dockerfile` automatically.
-3. Click **Add Service** → **Database** → **Redis** to provision a Redis instance.
-4. Railway auto-sets `REDIS_URL` in your API service's environment.
-
-**3. Set environment variables**
-
-In the Railway dashboard → your API service → Variables:
-
-```
-SOL_SERVICE_WALLET=<your Solana wallet pubkey>
-SOL_RPC_URL=https://mainnet.helius-rpc.com/?api-key=<helius-key>
-VECTARA_API_KEY=<optional>
-NODE_ENV=production
+```json
+{
+  "verdict": "BLOCK",
+  "overallScore": 0,
+  "claims": [{
+    "text": "from ghostpkg import magic",
+    "verdict": "BLOCK",
+    "confidence": 0.95,
+    "checkType": "hallucinated_package",
+    "suggestedFix": "Remove or replace \"ghostpkg\" with a real package."
+  }],
+  "certificate": "sha256:1cea7cf6..."
+}
 ```
 
-**4. Set a custom domain**
-
-Railway dashboard → your service → Settings → Custom Domain → `api.agent-toolbox.ai`
-
-Railway gives you a CNAME target (e.g. `api-service-abc123.up.railway.app`). Add it to Cloudflare DNS (see [DNS configuration](#dns-configuration)).
-
-**5. Verify**
+### Discover pricing programmatically
 
 ```bash
-curl https://api.agent-toolbox.ai/health
-# {"status":"ok","timestamp":"..."}
+curl https://api.agent-toolbox.ai/v1/pricing
 ```
 
----
-
-### API — Docker
-
-For any VPS, Fly.io, Render, or self-hosted setup.
-
-```bash
-# Build
-docker build -t agent-toolbox-api .
-
-# Run (minimal)
-docker run -p 3000:3000 \
-  -e SOL_SERVICE_WALLET=YourWalletPubkey \
-  -e NODE_ENV=production \
-  agent-toolbox-api
-
-# Run (full — with Redis and Vectara)
-docker run -p 3000:3000 \
-  -e SOL_SERVICE_WALLET=YourWalletPubkey \
-  -e SOL_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY \
-  -e REDIS_URL=redis://your-redis-host:6379 \
-  -e VECTARA_API_KEY=your-key \
-  -e NODE_ENV=production \
-  agent-toolbox-api
+```json
+{
+  "wallet": "8qXedRydihKEETqU64UXtG2sYZaUhwR4HBFz4Suu27CV",
+  "endpoints": {
+    "/v1/validate/imports": { "sol": 0.0001 },
+    "/v1/verify":           { "sol": 0.0002 },
+    "/v1/distill":          { "sol": 0.0001 }
+  },
+  "conversion": { "creditsPerSol": 10000 },
+  "freeTier": { "calls": 10 }
+}
 ```
-
-**Health check:** `GET /health` — returns `{"status":"ok"}` when ready.
-
-#### Fly.io
-
-```bash
-fly launch --name agent-toolbox-api --dockerfile Dockerfile
-fly secrets set SOL_SERVICE_WALLET=YourWalletPubkey
-fly secrets set SOL_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
-fly deploy
-```
-
----
-
-### Website — Cloudflare Pages
-
-The marketing website (`packages/web`) is already deployed to Cloudflare Pages.
-
-```bash
-# Build
-pnpm --filter @agentoolbox/web build
-# Output: packages/web/dist/
-
-# Deploy
-wrangler pages deploy packages/web/dist --project-name agent-toolbox-ai
-```
-
-Cloudflare Pages build settings (set in the dashboard if using Git integration):
-
-| Setting | Value |
-|---|---|
-| Build command | `pnpm --filter @agentoolbox/web build` |
-| Build output directory | `packages/web/dist` |
-| Root directory | `/` (repo root) |
-| Node.js version | `20` |
-
----
-
-### DNS configuration
-
-All DNS is managed through Cloudflare (account: `dan@solhammer.com`).
-
-| Record | Type | Target | Notes |
-|---|---|---|---|
-| `agent-toolbox.ai` | CNAME | `agent-toolbox-ai.pages.dev` | Cloudflare Pages — auto-configured when you add custom domain in Pages dashboard |
-| `api.agent-toolbox.ai` | CNAME | `<railway-cname>.up.railway.app` | API server — proxied through Cloudflare |
-| `www.agent-toolbox.ai` | CNAME | `agent-toolbox-ai.pages.dev` | Redirect to root |
-
-**To add `agent-toolbox.ai` as a custom domain in Cloudflare Pages:**
-1. Cloudflare dashboard → Pages → `agent-toolbox-ai` → Custom domains → Add `agent-toolbox.ai`
-2. Cloudflare handles the DNS automatically since the domain is already in the same account.
 
 ---
 
 ## API reference
 
-### Base URL
-
-- Production: `https://api.agent-toolbox.ai`
-- Local: `http://localhost:3000`
-
-### Authentication
-
-See [Authentication & SOL Payments](#authentication--sol-payments).
-
 ### `POST /v1/validate/imports`
 
-Validates all imports in AI-generated code against live package registries.
+Checks every import in AI-generated code against live package registries in parallel.
+
+**Supported languages:** `python` · `javascript` · `typescript` · `rust` · `go`
 
 **Request:**
-
 ```json
 {
   "language": "python",
-  "code": "import numpy\nfrom superlogger import magic_log\nimport pandas",
+  "code": "import numpy\nfrom ghostpkg import magic",
   "timeoutMs": 5000
 }
 ```
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `language` | `python` \| `javascript` \| `typescript` \| `rust` \| `go` | Yes | Programming language of the code snippet |
-| `code` | string | Yes | AI-generated code to validate (max 100KB) |
-| `timeoutMs` | number | No | Per-registry timeout in ms. Default: `5000` |
-
 **Response:**
-
 ```json
 {
   "language": "python",
-  "valid": [{ "name": "numpy", "status": "valid", "registry": "pypi", "registryUrl": "..." }],
-  "hallucinated": [{ "name": "superlogger", "status": "hallucinated", "registry": "pypi" }],
-  "unknown": [],
-  "totalImports": 3,
-  "hallucinationRate": 0.33,
+  "valid":        [{ "name": "numpy", "status": "valid", "registry": "pypi" }],
+  "hallucinated": [{ "name": "ghostpkg", "status": "hallucinated", "registry": "pypi" }],
+  "unknown":      [],
+  "totalImports": 2,
+  "hallucinationRate": 0.5,
   "latencyMs": 142
 }
 ```
@@ -295,85 +125,69 @@ Validates all imports in AI-generated code against live package registries.
 
 ### `POST /v1/verify`
 
-Runs the hallucination firewall on any LLM output.
+Runs the full hallucination firewall. All check layers run in parallel.
 
 **Request:**
-
 ```json
 {
   "outputType": "code",
-  "llmResponse": "import numpy\nfrom ghostpkg import magic",
+  "llmResponse": "...",
   "language": "python",
   "enforcementMode": "block",
-  "sourceTexts": ["..."],
+  "sourceTexts": ["optional retrieved context for NLI grounding"],
   "timeoutMs": 5000
 }
 ```
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `outputType` | `code` \| `natural_language` \| `agent_action` \| `factual_claim` | Yes | Type of LLM output being verified |
-| `llmResponse` | string | Yes | The LLM output to verify (max 200KB) |
-| `language` | string | No | Required when `outputType` is `code` |
-| `enforcementMode` | `block` \| `flag` \| `audit` | No | `block` (default): return BLOCK verdict. `flag`: downgrade BLOCK to FLAG. `audit`: log only. |
-| `sourceTexts` | string[] | No | Retrieved context docs for NLI grounding check (requires `VECTARA_API_KEY`) |
-| `timeoutMs` | number | No | Per-check timeout in ms. Default: `5000` |
+| Field | Values | Default |
+|---|---|---|
+| `outputType` | `code` `natural_language` `agent_action` `factual_claim` | required |
+| `enforcementMode` | `block` `flag` `audit` | `block` |
+| `language` | Required when `outputType` is `code` | — |
+| `sourceTexts` | Docs to ground against (enables NLI layer) | — |
 
 **Response:**
-
 ```json
 {
   "verdict": "BLOCK",
   "overallScore": 0.0,
-  "claims": [
-    {
-      "text": "from ghostpkg import magic",
-      "verdict": "BLOCK",
-      "confidence": 0.95,
-      "checkType": "hallucinated_package",
-      "evidence": "Package \"ghostpkg\" not found in pypi",
-      "suggestedFix": "Remove or replace \"ghostpkg\" with a real package."
-    }
-  ],
-  "outputType": "code",
-  "enforcementMode": "block",
-  "latencyMs": 187,
-  "certificate": "sha256:3a7f4c...",
-  "importValidation": {
-    "valid": ["numpy"],
-    "hallucinated": ["ghostpkg"],
-    "unknown": [],
-    "hallucinationRate": 0.5
-  }
+  "claims": [{
+    "text": "from ghostpkg import magic",
+    "verdict": "BLOCK",
+    "confidence": 0.95,
+    "checkType": "hallucinated_package",
+    "evidence": "Package \"ghostpkg\" not found in pypi",
+    "suggestedFix": "Remove or replace \"ghostpkg\" with a real package."
+  }],
+  "certificate": "sha256:...",
+  "latencyMs": 187
 }
 ```
 
 **Verdict meanings:**
-- `PASS` — no issues detected, safe to use
-- `FLAG` — potential issues, review before use
-- `BLOCK` — confirmed hallucination or bad content, do not use
+- `PASS` — no issues detected
+- `FLAG` — potential issue, review before use
+- `BLOCK` — confirmed problem, do not use
 
 **Check types:**
 
-| `checkType` | Triggered by | Verdict |
-|---|---|---|
-| `hallucinated_package` | Import not found in registry | BLOCK |
-| `unknown_package` | Registry check failed (timeout etc.) | FLAG |
-| `url_not_found` | URL returns 404/410 | BLOCK |
-| `url_unreachable` | URL times out | FLAG |
-| `malformed_doi` | DOI doesn't match `10.NNNN/suffix` | FLAG |
-| `malformed_arxiv_id` | arXiv ID doesn't match known format | FLAG |
-| `numeric_contradiction` | Percentage >100% or contradictory language | FLAG |
-| `low_nli_consistency` | Vectara HHEM score <0.5 vs source docs | FLAG/BLOCK |
+| `checkType` | What it caught |
+|---|---|
+| `hallucinated_package` | Import not found in live registry |
+| `url_not_found` | URL returns 404/410 |
+| `url_unreachable` | URL request timed out |
+| `malformed_doi` | DOI does not match `10.NNNN/suffix` format |
+| `malformed_arxiv_id` | arXiv ID does not match `YYMM.NNNNN` or `cat/NNNNNNN` |
+| `numeric_contradiction` | Percentage over 100% or contradictory increase/decrease language |
+| `low_nli_consistency` | Vectara HHEM score below threshold vs. source context |
 
 ---
 
 ### `POST /v1/distill`
 
-Compresses a conversation context to a token budget.
+Compresses a conversation context to a target token budget. Keeps the system prompt, deduplicates consecutive messages, retains the most important content.
 
 **Request:**
-
 ```json
 {
   "messages": [
@@ -386,14 +200,7 @@ Compresses a conversation context to a token budget.
 }
 ```
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `messages` | Message[] | Yes | Conversation history (max 500 messages) |
-| `targetTokens` | number | No | Target token budget. Default: `4000`. Max: `200000`. |
-| `preserveSystemPrompt` | boolean | No | Always keep the system message. Default: `true`. |
-
 **Response:**
-
 ```json
 {
   "messages": [...],
@@ -407,142 +214,123 @@ Compresses a conversation context to a token budget.
 
 ---
 
-### `GET /health`
-
-Returns `200 OK` when the server is healthy. Used as the Docker/Railway health check endpoint.
-
-```json
-{ "status": "ok", "timestamp": "2026-07-13T20:00:00.000Z" }
-```
-
----
-
-### `GET /stats`
-
-Returns aggregate credit ledger statistics (for monitoring).
-
-```json
-{ "keys": 142, "totalCalls": 8841 }
-```
-
----
-
-### Example: validate AI-generated Python imports
-
-```bash
-curl -X POST http://localhost:3000/v1/validate/imports \
-  -H "Content-Type: application/json" \
-  -d '{
-    "language": "python",
-    "code": "import numpy\nfrom superlogger import magic_log\nimport pandas"
-  }'
-```
-
-Response:
-```json
-{
-  "language": "python",
-  "valid": [{ "name": "numpy", "status": "valid", "registry": "pypi" }],
-  "hallucinated": [{ "name": "superlogger", "status": "hallucinated", "evidence": "Not found on PyPI" }],
-  "totalImports": 3,
-  "hallucinationRate": 0.33,
-  "latencyMs": 142
-}
-```
-
-### Example: run the hallucination firewall
-
-```bash
-curl -X POST http://localhost:3000/v1/verify \
-  -H "Content-Type: application/json" \
-  -d '{
-    "outputType": "code",
-    "language": "python",
-    "llmResponse": "import numpy\nfrom ghostpkg import magic",
-    "enforcementMode": "block"
-  }'
-```
-
-Response:
-```json
-{
-  "verdict": "BLOCK",
-  "overallScore": 0,
-  "claims": [{
-    "text": "from ghostpkg import magic",
-    "verdict": "BLOCK",
-    "confidence": 0.95,
-    "checkType": "hallucinated_package",
-    "evidence": "Package \"ghostpkg\" not found in pypi",
-    "suggestedFix": "Remove or replace \"ghostpkg\" with a real package."
-  }],
-  "certificate": "sha256:3a7f..."
-}
-```
-
-## Authentication & SOL Payments
+## Authentication & SOL payments
 
 ### Free tier
 
-10 calls per IP address, no authentication required. All endpoints are available.
+10 calls per IP address. No auth, no signup required.
+
+### Paid tier — SOL micropayments
+
+Agents pay autonomously on-chain. No subscription, no invoices, no human approval required.
+
+**Pricing:**
+
+| Endpoint | SOL per call | ~USD |
+|---|---|---|
+| `/v1/validate/imports` | 0.0001 SOL | ~$0.015 |
+| `/v1/verify` | 0.0002 SOL | ~$0.030 |
+| `/v1/distill` | 0.0001 SOL | ~$0.015 |
+
+**1 SOL = 10,000 credits**
+
+**Service wallet (Solana mainnet):**
+```
+8qXedRydihKEETqU64UXtG2sYZaUhwR4HBFz4Suu27CV
+```
+
+### Payment flow
+
+**1. Send SOL to the service wallet**
 
 ```bash
+# Solana CLI
+solana transfer 8qXedRydihKEETqU64UXtG2sYZaUhwR4HBFz4Suu27CV 0.1 --allow-unfunded-recipient
+# 0.1 SOL = 1,000 credits = 1,000 validation calls (or 500 firewall checks)
+```
+
+Any Solana wallet works — Phantom, Solflare, CLI, or programmatically via SDK.
+
+**2. Use the transaction signature as your Bearer token on the first call**
+
+```bash
+TX_SIG="5abc...your-solana-transaction-signature"
+
 curl -X POST https://api.agent-toolbox.ai/v1/validate/imports \
+  -H "Authorization: Bearer $TX_SIG" \
   -H "Content-Type: application/json" \
-  -d '{"language":"python","code":"import numpy"}'
+  -d '{ "language": "python", "code": "import numpy" }'
 ```
 
-### Paid tier
+The service verifies the transaction on-chain and credits your account instantly.
 
-Pass a `Bearer` token in the `Authorization` header. There are two token types:
+**3. Use the same signature as your API key on all subsequent calls**
 
-**1. Solana transaction signature (credit purchase)**
+Credits are deducted automatically. The tx signature acts as a persistent API key tied to your credit balance.
 
-Send SOL to `SOL_SERVICE_WALLET`, then pass the transaction signature as your Bearer token on the first call. The API verifies the tx on-chain and credits your account.
+**4. Top up by sending more SOL**
 
+Send another transaction to the service wallet and pass the new tx signature once to load more credits.
+
+### Autonomous agent payment (TypeScript)
+
+```typescript
+import {
+  Connection, Keypair, SystemProgram,
+  Transaction, sendAndConfirmTransaction, PublicKey, LAMPORTS_PER_SOL
+} from "@solana/web3.js";
+
+const SERVICE_WALLET = new PublicKey("8qXedRydihKEETqU64UXtG2sYZaUhwR4HBFz4Suu27CV");
+
+async function buyCredits(agentKeypair: Keypair, solAmount = 0.1): Promise<string> {
+  const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+  const tx = new Transaction().add(
+    SystemProgram.transfer({
+      fromPubkey: agentKeypair.publicKey,
+      toPubkey: SERVICE_WALLET,
+      lamports: solAmount * LAMPORTS_PER_SOL,
+    })
+  );
+  return sendAndConfirmTransaction(connection, tx, [agentKeypair]);
+}
+
+// Agent self-onboards: discover pricing, pay, start calling
+const pricing = await fetch("https://api.agent-toolbox.ai/v1/pricing").then(r => r.json());
+const txSig = await buyCredits(myKeypair); // 0.1 SOL = 1,000 credits
+
+const result = await fetch("https://api.agent-toolbox.ai/v1/verify", {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${txSig}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    outputType: "code",
+    language: "python",
+    llmResponse: generatedCode,
+  }),
+}).then(r => r.json());
+
+if (result.verdict === "BLOCK") {
+  // Reject the LLM output and regenerate
+}
 ```
-Pricing:
-  /v1/validate/imports  → 1 credit  (0.001 SOL)
-  /v1/verify            → 2 credits (0.002 SOL)
-  /v1/distill           → 1 credit  (0.001 SOL)
-```
-
-```bash
-# After sending SOL to the service wallet:
-curl -X POST https://api.agent-toolbox.ai/v1/verify \
-  -H "Authorization: Bearer <your-solana-tx-signature>" \
-  -H "Content-Type: application/json" \
-  -d '{...}'
-```
-
-The signature is verified once on-chain, credits are added to your account, and subsequent calls deduct from the balance.
-
-**2. API key (subsequent calls)**
-
-After your first call with a tx signature, use the same tx signature as a persistent API key. Credits are tracked by key in the Redis ledger.
 
 ### Error responses
 
-| Status | Error | Meaning |
+| HTTP | `error` field | Meaning |
 |---|---|---|
-| `402` | `free_tier_exhausted` | 10 free calls used. Send SOL to get credits. |
-| `402` | `insufficient_credits` | Account has no credits remaining. |
-| `401` | `invalid_token` | Empty or malformed Bearer token. |
+| `402` | `free_tier_exhausted` | 10 free calls used — send SOL to continue |
+| `402` | `insufficient_credits` | Balance empty — send more SOL |
+| `401` | `invalid_token` | Empty or malformed Bearer token |
 
 ---
 
-## Use as an MCP tool (Claude / Warp / Cursor)
+## MCP integration
 
-Build the MCP server first:
-
-```bash
-pnpm --filter @agentoolbox/mcp build
-```
-
-Add to your MCP config:
+Add to your MCP config to give Claude, Warp, or Cursor three quality tools:
 
 **Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
-
 ```json
 {
   "mcpServers": {
@@ -554,84 +342,95 @@ Add to your MCP config:
 }
 ```
 
-**Cursor** (`~/.cursor/mcp.json`): same format as above.
+Build first:
+```bash
+git clone https://github.com/solhammer/agentoolbox
+cd agentoolbox && pnpm install && pnpm --filter @agentoolbox/mcp build
+```
 
-**Warp**: Settings → MCP → Add server → paste the same JSON block.
+**Warp:** Settings → MCP → Add server → paste the same JSON.  
+**Cursor:** `~/.cursor/mcp.json` → same format.
 
-Available MCP tools:
+**Tools exposed:**
 
-| Tool | Description |
+| Tool | When to use |
 |---|---|
-| `validate_imports` | Check every package import in AI-generated code against live registries |
-| `verify_output` | Run the full hallucination firewall on any LLM response |
-| `distill_context` | Compress a bloated conversation history to a token budget |
+| `validate_imports` | Before executing any AI-generated code |
+| `verify_output` | Before accepting any LLM response in a critical step |
+| `distill_context` | When your context window is getting expensive |
 
-## Use the SDK
+---
+
+## TypeScript SDK
+
+```bash
+npm install @agentoolbox/sdk
+# or: pnpm add @agentoolbox/sdk
+```
 
 ```typescript
 import { AgentoolboxClient } from "@agentoolbox/sdk";
 
 const client = new AgentoolboxClient({
   baseUrl: "https://api.agent-toolbox.ai",
-  apiKey: "your-sol-auth-token", // optional for free tier (10 calls)
+  apiKey: process.env.AGENTOOLBOX_API_KEY, // your tx signature — omit for free tier
 });
 
-// Validate imports before running AI-generated code
+// 1. Validate imports before running generated code
 const { hallucinated } = await client.validateImports({
   language: "python",
   code: generatedCode,
 });
-
 if (hallucinated.length > 0) {
-  throw new Error(`Hallucinated packages: ${hallucinated.map(p => p.name).join(", ")}`);
+  throw new Error(`Hallucinated: ${hallucinated.map(p => p.name).join(", ")}`);
 }
 
-// Run the full firewall
+// 2. Verify any LLM output
 const result = await client.verify({
-  outputType: "code",
-  language: "python",
-  llmResponse: generatedCode,
+  outputType: "natural_language",
+  llmResponse: llmOutput,
+  enforcementMode: "block",
 });
-
 if (result.verdict === "BLOCK") {
-  console.error("Blocked:", result.claims);
+  console.error("Blocked:", result.claims.map(c => c.evidence));
 }
 
-// Compress a bloated context
-const { messages } = await client.distill({
+// 3. Compress context before a long LLM call
+const { messages, compressionRatio } = await client.distill({
   messages: conversationHistory,
   targetTokens: 4000,
 });
+console.log(`Context compressed ${(1 - compressionRatio) * 100}%`);
 ```
 
+---
 
-## Project structure
+## Self-hosting
 
-```
-agentoolbox/
-├── packages/
-│   ├── api/          Hono REST API server (the backend)
-│   ├── firewall/     Hallucination firewall engine
-│   ├── mcp/          MCP server — validate_imports, verify_output, distill_context
-│   ├── payments/     Solana on-chain payment verification
-│   ├── sdk/          TypeScript client SDK
-│   ├── validator/    Package/import validator core
-│   └── web/          Astro + Tailwind landing page (agent-toolbox.ai)
-├── Dockerfile        Docker image for the API server
-├── railway.toml      Railway deployment config
-├── wrangler.toml     Cloudflare Pages config (website)
-├── .env.example      Environment variable template
-└── pnpm-workspace.yaml
-```
-
-## Running tests
+The full stack is open source under MIT.
 
 ```bash
-pnpm test
+git clone https://github.com/solhammer/agentoolbox
+cd agentoolbox
+cp .env.example .env
+pnpm install
+pnpm dev   # → http://localhost:3000
 ```
 
-## Roadmap
+**Required env vars:**
 
-- **v1** ✅ Package validator, deterministic firewall (packages/URLs/DOI/numeric), sliding-window distiller, MCP server, SOL payment middleware
-- **v2** ✅ NLI layer (Vectara HHEM), TF-IDF importance distiller, on-chain SOL payment verification, Redis credit ledger
-- **v3** Agent trajectory auditor, cross-agent hallucination attribution, public hallucination leaderboard, LLMLingua-2 managed service
+| Variable | Description |
+|---|---|
+| `SOL_SERVICE_WALLET` | Your Solana wallet public key — agents send SOL here |
+| `ADMIN_API_KEY` | Secret key for the `/admin/*` monitoring routes |
+
+**Optional:**
+
+| Variable | Enables |
+|---|---|
+| `REDIS_URL` | Persistent credit ledger (otherwise in-memory) |
+| `VECTARA_API_KEY` | NLI hallucination layer (HHEM v2) |
+| `SOL_RPC_URL` | Custom Solana RPC (default: public mainnet) |
+| `LLMLINGUA_URL` | LLMLingua-2 compression service |
+
+See the [deployment guide](https://github.com/solhammer/agentoolbox#deployment) for Railway, Docker, and Cloudflare Pages instructions.
