@@ -170,6 +170,164 @@ export class AgentoolboxClient {
   }): Promise<unknown> {
     return this.post<unknown>("/v1/scan/vulnerabilities", input);
   }
+
+  // ── Finance Protection Toolkit ─────────────────────────────────────────────
+
+  /**
+   * Validate raw on-chain token amount against the token's authoritative decimals.
+   * Prevents the Lobstar-class decimal error ($440k book → $40k realized).
+   *
+   * @example
+   * const r = await client.financeCheckUnits({ tokenAddress: mint, rawAmount: "52439000000", uiAmount: 52439, chain: "solana" });
+   * if (r.verdict === "BLOCK") throw new Error("Decimal mismatch: " + r.deviation_pct + "% off");
+   */
+  async financeCheckUnits(input: {
+    tokenAddress: string;
+    rawAmount: string;
+    uiAmount: number;
+    chain: "solana" | "ethereum" | "bsc" | "polygon" | "base" | "arbitrum";
+    timeoutMs?: number;
+  }): Promise<unknown> {
+    return this.post<unknown>("/v1/finance/units", input);
+  }
+
+  /**
+   * Cross-validate a price against two independent live sources.
+   * Blocks if sources diverge >2% or data is stale.
+   * Crypto: CoinGecko + DexScreener. Stocks: yahoo-finance2.
+   *
+   * @example
+   * const r = await client.financeCheckPrice({ symbol: "solana", assetType: "crypto", proposedPrice: 95 });
+   * if (r.verdict === "BLOCK") throw new Error("Price deviation: " + r.proposedPriceDeviation + "%");
+   */
+  async financeCheckPrice(input: {
+    symbol?: string;
+    tokenAddress?: string;
+    assetType: "crypto" | "stock" | "forex";
+    proposedPrice?: number;
+    maxAgeSeconds?: number;
+    divergenceThresholdPct?: number;
+    timeoutMs?: number;
+  }): Promise<unknown> {
+    return this.post<unknown>("/v1/finance/price", input);
+  }
+
+  /**
+   * Resolve a ticker symbol or token address to a confirmed identity.
+   * Critical for crypto — symbols collide (USDC has 200+ imposters on Solana).
+   *
+   * @example
+   * const r = await client.financeResolveSymbol({ symbol: "USDC", assetType: "crypto", chain: "solana" });
+   * if (r.ambiguous) console.warn("Ambiguous symbol — use token address");
+   */
+  async financeResolveSymbol(input: {
+    symbol: string;
+    assetType: "crypto" | "stock";
+    expectedName?: string;
+    chain?: string;
+  }): Promise<unknown> {
+    return this.post<unknown>("/v1/finance/symbol", input);
+  }
+
+  /**
+   * Rug pull scanner for Solana tokens.
+   * Checks RugCheck.xyz score + on-chain mint/freeze authority.
+   *
+   * @example
+   * const r = await client.financeCheckTokenRisk({ address: mint, chain: "solana" });
+   * if (r.verdict === "BLOCK") throw new Error("Rug risk: " + r.specificRisks.join(", "));
+   */
+  async financeCheckTokenRisk(input: {
+    address: string;
+    chain: "solana" | "ethereum" | "bsc" | "polygon" | "base" | "arbitrum";
+    maxRugScore?: number;
+    requireLpLocked?: boolean;
+    blockIfMintAuthority?: boolean;
+    blockIfFreezeAuthority?: boolean;
+    timeoutMs?: number;
+  }): Promise<unknown> {
+    return this.post<unknown>("/v1/finance/token/risk", input);
+  }
+
+  /**
+   * Estimate price impact and check pool depth before a trade.
+   * Prevents the thin-pool disaster where a large order drains the pool.
+   * Formula: (tradeUsd / poolLiquidity) × 100 × 2 (constant-product AMM).
+   *
+   * @example
+   * const r = await client.financeCheckSlippage({ tokenAddress: mint, tradeUsd: 50000, chain: "solana" });
+   * if (r.verdict === "BLOCK") throw new Error(`Impact ${r.estimatedPriceImpactPct}% on $${r.poolLiquidityUsd} pool`);
+   */
+  async financeCheckSlippage(input: {
+    tokenAddress: string;
+    chain: string;
+    tradeUsd: number;
+    maxPriceImpactPct?: number;
+    minLiquidityUsd?: number;
+    timeoutMs?: number;
+  }): Promise<unknown> {
+    return this.post<unknown>("/v1/finance/slippage", input);
+  }
+
+  /**
+   * Full pre-trade risk gate. Runs all applicable checks in parallel:
+   * token risk, slippage, price validation, and position limits.
+   * Returns composite PASS/FLAG/BLOCK with blockedBy field.
+   *
+   * @example
+   * const r = await client.financeCheckOrderRisk({ tokenAddress: mint, assetType: "crypto", side: "buy", tradeUsd: 5000, chain: "solana" });
+   * if (r.verdict === "BLOCK") throw new Error(`Blocked by ${r.blockedBy}`);
+   */
+  async financeCheckOrderRisk(input: {
+    symbol?: string;
+    tokenAddress?: string;
+    assetType: "crypto" | "stock";
+    side: "buy" | "sell";
+    tradeUsd: number;
+    portfolioValueUsd?: number;
+    chain?: string;
+    leverage?: number;
+    timeoutMs?: number;
+  }): Promise<unknown> {
+    return this.post<unknown>("/v1/finance/order/risk", input);
+  }
+
+  /**
+   * Deterministic position limits and kill-switch. No external API calls — pure arithmetic.
+   * Enforces max position size %, daily loss limits, leverage caps, and asset allowlists.
+   * Always call this last — it is the final non-overridable gate.
+   *
+   * @example
+   * const r = await client.financeCheckPosition({ trade: { symbol, side: "buy", tradeUsd, assetType: "crypto" }, portfolio, rules: { killSwitch: false, maxPositionPct: 25 } });
+   * if (r.verdict === "BLOCK") throw new Error(r.violations.join(", "));
+   */
+  async financeCheckPosition(input: {
+    trade: {
+      symbol: string;
+      side: "buy" | "sell" | "long" | "short";
+      tradeUsd: number;
+      leverage?: number;
+      assetType: "crypto" | "stock" | "forex";
+    };
+    portfolio: {
+      totalValueUsd: number;
+      cashUsd: number;
+      dailyPnlUsd?: number;
+      openPositions?: number;
+      assetAllocation?: Record<string, number>;
+    };
+    rules?: {
+      maxPositionPct?: number;
+      maxDailyLossPct?: number;
+      maxOpenPositions?: number;
+      maxLeverage?: number;
+      allowedAssets?: string[];
+      killSwitch?: boolean;
+      maxSingleTradeUsd?: number;
+    };
+  }): Promise<unknown> {
+    return this.post<unknown>("/v1/finance/position/check", input);
+  }
 }
 
 export class AgentoolboxError extends Error {
