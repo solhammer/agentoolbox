@@ -1,8 +1,7 @@
 {
-  "name": "@agentoolbox/sdk",
-  "version": "0.1.0",
-  "description": "agent-toolbox.ai client SDK — typed API client for agent use",
-  "homepage": "https://agent-toolbox.ai",
+  "name": "agent-toolbox-sdk",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for agent-toolbox.ai — hallucination firewall, import validator, secret scanner, injection detector, token counter, vulnerability scanner, context distiller",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,10 +11,38 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "ai-agents",
+    "hallucination",
+    "llm",
+    "mcp",
+    "solana",
+    "vibe-coding",
+    "agent-tooling",
+    "prompt-injection",
+    "typescript"
+  ],
+  "author": "agent-toolbox.ai",
+  "license": "MIT",
+  "homepage": "https://agent-toolbox.ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/solhammer/agentoolbox.git",
+    "directory": "packages/sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/solhammer/agentoolbox/issues"
   },
   "devDependencies": {
     "typescript": "^5.5.0"
