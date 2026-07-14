@@ -21,6 +21,33 @@ const features = [
   },
 ];
 
+const securityTools = [
+  {
+    title: 'Secret Scanner',
+    body: 'Detects hardcoded API keys, passwords, private keys, and connection strings in AI-generated code before they reach git. 10 pattern detectors. Redacted output.',
+    endpoint: 'POST /v1/scan/secrets',
+    icon: 'key',
+  },
+  {
+    title: 'Injection Detector',
+    body: 'Identifies prompt injection attacks in user input — role hijacking, jailbreaks, data exfiltration attempts, and encoding tricks — before passing to an LLM.',
+    endpoint: 'POST /v1/scan/injection',
+    icon: 'shield-x',
+  },
+  {
+    title: 'Token Counter',
+    body: 'BPE-approximate token counting for GPT-4, Claude, and Gemini with per-model cost estimates. Know your spend before you call the LLM.',
+    endpoint: 'POST /v1/tokens/count',
+    icon: 'hash',
+  },
+  {
+    title: 'Vulnerability Scanner',
+    body: 'Checks every package in AI-generated code against the OSV (Open Source Vulnerabilities) database. Surfaces CVEs and GHSAs before dependencies are installed.',
+    endpoint: 'POST /v1/scan/vulnerabilities',
+    icon: 'bug',
+  },
+];
+
 const stats = [
   { value: '19.7%', label: 'of AI-generated packages are hallucinated', source: 'USENIX 2025' },
   { value: '68%', label: 'of multi-agent pipelines contain hallucinations', source: 'IBM 2026' },
@@ -117,8 +144,8 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
             AI agent needs
           </h1>
           <p class="mx-auto mt-6 max-w-2xl text-lg text-[#8b949e] sm:text-xl">
-            Catch hallucinated packages. Block bad outputs. Cut token waste.
-            <span class="text-white">Before your agent breaks production.</span>
+            Catch hallucinated packages. Block injections. Scan secrets. Count tokens.
+            <span class="text-white">Seven tools. One platform. Pay per call in SOL.</span>
           </p>
           <div class="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <a
@@ -167,11 +194,12 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
 
       <!-- FEATURES -->
       <section class="mx-auto max-w-6xl px-6 py-16">
-        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">Three checks. One firewall.</h2>
+        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">Seven tools. One platform.</h2>
         <p class="mx-auto mt-3 max-w-2xl text-center text-[#8b949e]">
-          Composable, agent-callable services that verify and improve LLM outputs before they cause damage.
+          Composable, agent-callable APIs that verify and improve LLM outputs before they cause damage.
         </p>
-        <div class="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+        <p class="mt-2 text-center text-xs font-semibold uppercase tracking-wider text-brand">Core quality checks</p>
+        <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
           {
             features.map((feature) => (
               <div class="group relative overflow-hidden rounded-xl border border-surface-border bg-surface-card p-6 transition hover:border-brand/50">
@@ -202,6 +230,62 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
                 <p class="mt-2 text-sm leading-relaxed text-[#8b949e]">{feature.body}</p>
                 <span class="mt-5 inline-block rounded-md border border-surface-border bg-surface px-3 py-1.5 font-mono text-xs text-brand">
                   {feature.endpoint}
+                </span>
+              </div>
+            ))
+          }
+        </div>
+
+        <!-- Security & Analysis tools -->
+        <p class="mt-14 text-center text-xs font-semibold uppercase tracking-wider text-brand">Security &amp; analysis</p>
+        <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {
+            securityTools.map((tool) => (
+              <div class="group relative overflow-hidden rounded-xl border border-surface-border bg-surface-card p-6 transition hover:border-brand/50">
+                <div class="absolute inset-x-0 top-0 h-1 bg-brand/50"></div>
+                <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                  {tool.icon === 'key' && (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <circle cx="7.5" cy="15.5" r="5.5" />
+                      <path d="m21 2-9.6 9.6" />
+                      <path d="m15.5 7.5 3 3L22 7l-3-3" />
+                    </svg>
+                  )}
+                  {tool.icon === 'shield-x' && (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                      <path d="m9.5 9.5 5 5" />
+                      <path d="m14.5 9.5-5 5" />
+                    </svg>
+                  )}
+                  {tool.icon === 'hash' && (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <line x1="4" y1="9" x2="20" y2="9" />
+                      <line x1="4" y1="15" x2="20" y2="15" />
+                      <line x1="10" y1="3" x2="8" y2="21" />
+                      <line x1="16" y1="3" x2="14" y2="21" />
+                    </svg>
+                  )}
+                  {tool.icon === 'bug' && (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="m8 2 1.88 1.88" />
+                      <path d="M14.12 3.88 16 2" />
+                      <path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1" />
+                      <path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6z" />
+                      <path d="M12 20v-9" />
+                      <path d="M6.53 9C4.6 8.8 3 7.1 3 5" />
+                      <path d="M6 13H2" />
+                      <path d="M3 21c0-2.1 1.7-3.9 3.8-4" />
+                      <path d="M20.97 5c0 2.1-1.6 3.8-3.5 4" />
+                      <path d="M22 13h-4" />
+                      <path d="M17.2 17c2.1.1 3.8 1.9 3.8 4" />
+                    </svg>
+                  )}
+                </div>
+                <h3 class="mt-5 text-base font-semibold">{tool.title}</h3>
+                <p class="mt-2 text-sm leading-relaxed text-[#8b949e]">{tool.body}</p>
+                <span class="mt-5 inline-block rounded-md border border-surface-border bg-surface px-3 py-1.5 font-mono text-xs text-brand">
+                  {tool.endpoint}
                 </span>
               </div>
             ))
@@ -258,7 +342,7 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
               Works with Claude, Warp, Cursor — any MCP client
             </h2>
             <p class="mt-4 text-[#8b949e]">
-              Drop agent-toolbox into your MCP config and your agent gets three quality tools out of the box. No SDK, no glue code.
+              Drop agent-toolbox into your MCP config and your agent gets quality tools out of the box — validate, verify, and distill. No SDK, no glue code.
             </p>
             <div class="mt-6 flex flex-wrap gap-3">
               {
@@ -298,7 +382,7 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
             <ul class="mt-6 space-y-3 text-sm text-[#8b949e]">
               <li class="flex items-center gap-2"><span class="text-brand">✓</span> 10 calls per IP</li>
               <li class="flex items-center gap-2"><span class="text-brand">✓</span> No auth needed</li>
-              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All 3 endpoints</li>
+              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All 7 endpoints</li>
             </ul>
             <a
               href="#code"
