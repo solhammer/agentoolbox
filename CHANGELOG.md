@@ -3,6 +3,15 @@
 All notable changes to agent-toolbox.ai are documented here.
 
 
+## [1.0.4] — 2026-07-14
+
+### Changed
+- agent-toolbox-sdk bumped to 1.0.4
+- See git log for detailed changes
+
+---
+
+
 ## [1.0.2] — 2026-07-14
 
 ### Changed
