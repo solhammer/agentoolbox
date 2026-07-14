@@ -32,11 +32,10 @@ jobs:
         run: pnpm --filter @agentoolbox/web build
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy packages/web/dist --project-name=agent-toolbox-ai --branch=production
+        run: npx wrangler pages deploy packages/web/dist --project-name=agent-toolbox-ai --branch=production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   deploy-admin:
     name: Deploy Admin Dashboard → Cloudflare Pages
@@ -61,11 +60,10 @@ jobs:
         run: pnpm --filter @agentoolbox/admin build
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy packages/admin/dist --project-name=agent-toolbox-admin --branch=production
+        run: npx wrangler pages deploy packages/admin/dist --project-name=agent-toolbox-admin --branch=production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   # API auto-deploys via Railway's GitHub integration on every push to main.
   # No action needed here — Railway watches solhammer/agentoolbox:main.
