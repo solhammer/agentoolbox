@@ -118,19 +118,33 @@ fi
 if ! $DRY_RUN; then
   echo ""
   info "Publishing to npm..."
-  warn "You need your 6-digit OTP from your authenticator app."
-  printf "Enter npm OTP: "
-  read -r OTP
 
-  if [ -z "$OTP" ]; then
-    # Restore version and abort
-    git checkout "$SDK_DIR/package.json"
-    error "No OTP entered. Publish aborted. Version reverted."
+  if [ -n "${NPM_TOKEN:-}" ]; then
+    # Granular access token — bypasses 2FA, no OTP needed
+    info "Using NPM_TOKEN (granular access token)"
+    npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
+    cd "$SDK_DIR"
+    npm publish --access public 2>&1
+    cd "$REPO_ROOT"
+    # Clear the token from npm config after publish
+    npm config delete //registry.npmjs.org/:_authToken
+  else
+    # Fall back to interactive OTP (browser session)
+    warn "NPM_TOKEN not set — falling back to OTP."
+    warn "Tip: export NPM_TOKEN=<your-granular-token> to skip this prompt."
+    printf "Enter npm OTP: "
+    read -r OTP
+
+    if [ -z "$OTP" ]; then
+      git checkout "$SDK_DIR/package.json"
+      error "No OTP entered. Publish aborted. Version reverted."
+    fi
+
+    cd "$SDK_DIR"
+    npm publish --access public --otp "$OTP" 2>&1
+    cd "$REPO_ROOT"
   fi
 
-  cd "$SDK_DIR"
-  npm publish --access public --otp "$OTP" 2>&1
-  cd "$REPO_ROOT"
   success "Published agent-toolbox-sdk@$NEW_VERSION to npm"
 else
   warn "[DRY RUN] Would publish agent-toolbox-sdk@$NEW_VERSION"
