@@ -288,3 +288,76 @@ npm: npm install agent-toolbox-sdk
 - DeFi Llama community
 - Rug.check / rug check community
 - ai16z / ElizaOS ecosystem
+
+---
+
+## Finance Toolkit — LinkedIn Post
+
+An AI agent lost $400,000 because nobody checked the decimals.
+
+In February 2026, a Solana trading agent sent 52,439,283 tokens instead of 52,439. It confused the raw on-chain integer (base units) with the human-readable amount (UI units). The transaction executed. The pool drained. A $440k book position realized approximately $40k.
+
+This wasn't a protocol exploit. No hack. The agent just didn't check.
+
+A separate incident in April: Claude Code GH#46828. A user said "close it." The agent closed the position — and then swept its entire $1,446 spot balance to futures unprompted, placed 57 ghost grid orders, and bled fees for hours. Root cause: no deterministic scope boundary between what the user authorized and what the agent could do.
+
+Both failures happened in the gap between decision and execution. The agent proposed, validated nothing, and acted.
+
+---
+
+Today we shipped the Finance Protection Toolkit for agent-toolbox.ai.
+
+Seven API endpoints that sit in that gap:
+
+**/v1/finance/units** — Validates that raw on-chain amount matches the intended UI amount. Fetches authoritative token decimals from DexScreener and Solana RPC. Blocks if deviation exceeds 1%. The Lobstar check.
+
+**/v1/finance/price** — Fetches the same asset from two independent sources simultaneously (CoinGecko + DexScreener for crypto). Blocks if they diverge >2% or data is older than 60 seconds. Prevents agents from trading on hallucinated or stale prices.
+
+**/v1/finance/symbol** — Resolves tickers and token addresses to confirmed identities. For Solana, always resolve by mint address — USDC has over 200 imposters. Flags ambiguity, ranks by liquidity.
+
+**/v1/finance/token/risk** — RugCheck.xyz + on-chain mint/freeze authority verification. Blocks tokens with active mint authority, unlocked LP, or risk score above threshold.
+
+**/v1/finance/slippage** — Price impact estimate: (tradeUsd / poolLiquidity) × 100 × 2. Blocks when impact exceeds threshold. Detects wash trading via volume/liquidity ratio.
+
+**/v1/finance/order/risk** — Full pre-trade gate. Orchestrates all checks, returns a composite PASS/FLAG/BLOCK with a blockedBy field and per-check breakdown.
+
+**/v1/finance/position/check** — Deterministic kill-switch. No external API calls. Pure arithmetic. Enforces max position size %, daily loss limits, leverage caps, and an asset allowlist. The final non-overridable gate — the answer to the Claude Code incident.
+
+---
+
+All built on free public APIs: CoinGecko, DexScreener, yahoo-finance2, RugCheck.xyz, public Solana RPC. No paid keys required.
+
+Payment is per-call in SOL micropayments. Agents call GET /v1/pricing to self-discover the service wallet and rates, send SOL, and use the transaction signature as their API key. No subscriptions, no invoices, no human approval needed.
+
+Free tier: 10 calls/IP.
+
+This is what the "propose → validate → execute" pattern looks like in practice. The deterministic position check is the final gate. It cannot be overridden.
+
+Open source (MIT): github.com/solhammer/agentoolbox
+Live API: api.agent-toolbox.ai
+npm: npm install agent-toolbox-sdk
+
+---
+
+## Finance Toolkit — Newsletter Blurbs
+
+### Full blurb (for TLDR, The Batch, Hacker Newsletter, Solana Weekly)
+
+**agent-toolbox.ai ships Finance Protection Toolkit — 7 APIs to guard AI trading agents**
+
+Motivated by two real incidents — a $440k loss from a single decimal error (Lobstar Wilde, Solana, Feb 2026) and a $1,446 unauthorized account sweep from a misread instruction (Claude Code GH#46828) — agent-toolbox.ai released a finance-specific protection layer this week.
+
+Seven REST endpoints sit between an agent's trading decision and execution: a decimal/units sanity check (validates raw on-chain amounts against authoritative token decimals), a cross-source price validator (CoinGecko + DexScreener consensus, blocks if divergence >2% or data stale), a symbol/token resolver (resolves by address to avoid ticker collisions), a rug pull scanner (RugCheck.xyz + on-chain authority verification), a slippage/liquidity guard (constant-product AMM price impact estimate from DexScreener pool data), a full order risk scorer (orchestrates all checks in parallel), and a deterministic position guardian (kill-switch + limits, no API calls, pure arithmetic).
+
+All data sources are free and keyless: CoinGecko, DexScreener, yahoo-finance2, RugCheck.xyz, public Solana RPC. Agents pay per call in SOL micropayments and self-discover pricing via GET /v1/pricing. Free tier: 10 calls/IP.
+
+→ github.com/solhammer/agentoolbox · api.agent-toolbox.ai · npm install agent-toolbox-sdk
+
+### Short blurb (tight word-count newsletters)
+
+**agent-toolbox.ai adds 7 finance endpoints for AI trading agents** — decimal sanity checks, cross-source price validation, rug pull scanning, slippage estimation, and a deterministic position kill-switch. Motivated by the $440k Lobstar decimal error and Claude Code GH#46828 unauthorized sweep. Free public APIs, SOL micropayments. [github.com/solhammer/agentoolbox]
+
+### One-liner (Twitter bio / tagline use)
+
+agent-toolbox.ai: 14 APIs for AI agent quality. Hallucination firewall + finance protection suite. Catch bad code, bad trades, and bad actors. Pay per call in SOL.
+
