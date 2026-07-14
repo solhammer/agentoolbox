@@ -114,6 +114,62 @@ export class AgentoolboxClient {
   async distill(input: DistillInput): Promise<DistillResult> {
     return this.post<DistillResult>("/v1/distill", input);
   }
+
+  /**
+   * Scan AI-generated code for hardcoded secrets and credentials.
+   * Returns redacted findings — actual secret values are never echoed back.
+   *
+   * @example
+   * const { safe, findings } = await client.scanSecrets({ code: generatedCode });
+   * if (!safe) throw new Error(`Secrets found: ${findings.map(f => f.type).join(", ")}`);
+   */
+  async scanSecrets(input: { code: string; filename?: string }): Promise<unknown> {
+    return this.post<unknown>("/v1/scan/secrets", input);
+  }
+
+  /**
+   * Detect prompt injection attacks in user-supplied input.
+   * Call this before passing any user input to an LLM.
+   *
+   * @example
+   * const { risk, advice } = await client.scanInjection({ input: userMessage });
+   * if (risk === "injection") return res.status(400).json({ error: advice });
+   */
+  async scanInjection(input: { input: string; context?: string }): Promise<unknown> {
+    return this.post<unknown>("/v1/scan/injection", input);
+  }
+
+  /**
+   * Count tokens and estimate cost before making an LLM API call.
+   * Supports text strings or messages arrays for chat-format counting.
+   *
+   * @example
+   * const { total, contextWindowRemaining } = await client.countTokens({ messages, model: "claude" });
+   * if (total > 100_000) await client.distill({ messages, targetTokens: 50_000 });
+   */
+  async countTokens(input: {
+    text?: string;
+    messages?: Array<{ role: string; content: string }>;
+    model?: "gpt-4" | "gpt-3.5" | "claude" | "gemini" | "generic";
+  }): Promise<unknown> {
+    return this.post<unknown>("/v1/tokens/count", input);
+  }
+
+  /**
+   * Check packages in AI-generated code against the OSV vulnerability database.
+   * Surfaces CVEs and GHSAs before dependencies are installed.
+   *
+   * @example
+   * const { safe, findings } = await client.scanVulnerabilities({ packages: ["pillow"], language: "python" });
+   * if (!safe) console.warn("Vulnerable packages:", findings.map(f => f.package));
+   */
+  async scanVulnerabilities(input: {
+    packages: string[];
+    language: "python" | "javascript" | "typescript" | "rust" | "go";
+    timeoutMs?: number;
+  }): Promise<unknown> {
+    return this.post<unknown>("/v1/scan/vulnerabilities", input);
+  }
 }
 
 export class AgentoolboxError extends Error {
