@@ -1,0 +1,46 @@
+name: Publish to npm
+
+# Triggered manually or on a version tag push (e.g. sdk-v1.0.1)
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 1.0.1)'
+        required: true
+  push:
+    tags:
+      - 'sdk-v*'
+
+jobs:
+  publish:
+    name: Publish agent-toolbox-sdk
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC trusted publishing
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'           # Trusted publishing requires Node 22.14+
+          registry-url: 'https://registry.npmjs.org'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Build SDK
+        run: pnpm --filter agent-toolbox-sdk build
+
+      - name: Publish to npm (OIDC trusted publishing — no token needed)
+        run: npm publish --access public
+        working-directory: packages/sdk
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}  # Fallback if trusted publishing not yet configured
