@@ -20,6 +20,8 @@ const icons: Record<string, string> = {
   'coins': svg('<circle cx="8" cy="8" r="6" /><path d="M18.09 10.37A6 6 0 1 1 10.34 18" /><path d="M7 6h1v4" /><path d="m16.71 13.88.7.71-2.82 2.82" />'),
   'chart-line': svg('<path d="M3 3v18h18" /><path d="m19 9-5 5-4-4-3 3" />'),
   'shield-dollar': svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M12 8v8" /><path d="M14.5 10.5a2 2 0 0 0-2-1.5h-1a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3h-1a2 2 0 0 1-2-1.5" />'),
+  'scale': svg('<path d="M12 3v18" /><path d="M7 21h10" /><path d="M5 7h14l-3 6a3 3 0 0 1-4 0z" transform="translate(1 0)" /><path d="m5 7-3 6a3 3 0 0 0 6 0z" /><path d="m19 7 3 6a3 3 0 0 1-6 0z" /><path d="M5 7h14" />'),
+  'pill': svg('<path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z" /><path d="m8.5 8.5 7 7" />'),
 };
 
 const features = [
@@ -382,7 +384,62 @@ const financeTools = [
   },
 ];
 
-const allTools = [...features, ...securityTools, ...financeTools];
+const safetyTools = [
+  {
+    slug: 'compliance-sanctions',
+    suite: 'compliance',
+    title: 'Sanctions Screening',
+    body: 'Screens people, companies, and vessels against OFAC sanctions lists (SDN + Consolidated). Exact, alias, and fuzzy matching returns PASS/FLAG/BLOCK with a signed certificate.',
+    endpoint: 'POST /v1/compliance/sanctions',
+    icon: 'scale',
+    credits: '1 credit \u00b7 ~$0.015',
+    latency: '<10ms',
+    featured: true,
+    detail:
+      'The deterministic gate an agent calls before it onboards, pays, ships to, or contracts with a counterparty. Names are normalized (diacritics, punctuation, org suffixes) and matched against a bundled OFAC snapshot by exact name, alias, and token-sorted Jaro-Winkler similarity. No network calls \u2014 the lists ship with the tool \u2014 and every verdict carries a tamper-evident certificate.',
+    capabilities: [
+      'OFAC SDN + Consolidated lists, matched by name and alias',
+      'Exact, alias, and fuzzy (token-sorted Jaro-Winkler) matching',
+      'PASS / FLAG / BLOCK with per-match score, program, and jurisdiction',
+      'Filter by list and entity type; tunable fuzzy threshold',
+      'Deterministic and offline, with a SHA-256 certificate',
+    ],
+    useCases: [
+      'KYC / onboarding agents screening new customers or vendors',
+      'Payments and payouts: block transfers to sanctioned parties',
+      'Marketplaces, logistics, and hiring \u2014 restricted-party checks',
+      'A pre-flight compliance gate with an audit certificate',
+    ],
+  },
+  {
+    slug: 'health-rx-check',
+    suite: 'health',
+    title: 'Medication Safety Gate',
+    body: 'Checks a medication list for unit confusion (mg vs mcg), overdoses, and dangerous drug-drug interactions. Returns PASS/FLAG/BLOCK. Informational only \u2014 not medical advice.',
+    endpoint: 'POST /v1/health/rx-check',
+    icon: 'pill',
+    credits: '2 credits \u00b7 ~$0.030',
+    latency: '<10ms',
+    featured: true,
+    detail:
+      'A deterministic safety net for healthcare copilots and prescription workflows. It validates dose units (catching the 1000\u00d7 mg/mcg error), checks total daily doses against known maximums including weight-based ranges, and screens every drug pair against a curated interaction table. Every result carries a signed certificate and a clear not-medical-advice disclaimer.',
+    capabilities: [
+      'Unit-confusion detection (e.g. levothyroxine dosed in mg vs mcg)',
+      'Overdose checks vs. max daily dose, incl. weight-based (mg/kg)',
+      'Drug-drug interaction screening across a curated table',
+      'Severity moderate / major / contraindicated \u2192 FLAG or BLOCK',
+      'Deterministic and offline; signed certificate; not medical advice',
+    ],
+    useCases: [
+      'Telehealth and clinical copilots drafting medication lists',
+      'Pharmacy and e-prescribing assistants',
+      'Patient-facing agents that must never suggest an unsafe combo',
+      'A final safety gate before any dosing instruction is shown',
+    ],
+  },
+];
+
+const allTools = [...features, ...securityTools, ...financeTools, ...safetyTools];
 
 const stats = [
   { value: '19.7%', label: 'of AI-generated packages are hallucinated', source: 'USENIX 2025' },
@@ -440,6 +497,7 @@ const mcpTools = [
   'scan_secrets', 'scan_injection', 'count_tokens', 'scan_vulnerabilities', 'scan_pii',
   'finance_units', 'finance_price', 'finance_symbol', 'finance_token_risk',
   'finance_slippage', 'finance_order_risk', 'finance_position_check',
+  'screen_sanctions', 'rx_check',
 ];
 ---
 
@@ -450,7 +508,7 @@ const mcpTools = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="The quality layer every AI agent needs. Catch hallucinated packages, block bad outputs, redact PII/PHI/PCI before egress, and guard trades — 15 agent-callable APIs, pay per call in SOL."
+      content="The quality layer every AI agent needs. Catch hallucinated packages, block bad outputs, redact PII/PHI/PCI before egress, screen sanctions, and guard trades — 17 agent-callable APIs, pay per call in SOL."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -524,8 +582,8 @@ const mcpTools = [
             AI agent needs
           </h1>
           <p class="mx-auto mt-6 max-w-2xl text-lg text-[#8b949e] sm:text-xl">
-            Catch hallucinations. Block injections. Redact PII. Guard trades.
-            <span class="text-white">15 tools. One platform. Pay per call in SOL.</span>
+            Catch hallucinations. Block injections. Redact PII. Screen sanctions. Guard trades.
+            <span class="text-white">17 tools. One platform. Pay per call in SOL.</span>
           </p>
           <div class="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <a
@@ -628,7 +686,7 @@ const mcpTools = [
 
       <!-- FEATURES -->
       <section class="mx-auto max-w-6xl px-6 py-16">
-        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">15 tools. Three suites. One platform.</h2>
+        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">17 tools. Four suites. One platform.</h2>
         <p class="mx-auto mt-3 max-w-2xl text-center text-[#8b949e]">
           Composable, agent-callable APIs that verify and improve LLM outputs before they cause damage.
           <span class="text-white">Click any tool for capabilities and use cases.</span>
@@ -692,6 +750,27 @@ const mcpTools = [
             ))
           }
         </div>
+
+        <!-- Compliance & safety tools -->
+        <p class="mt-14 text-center text-xs font-semibold uppercase tracking-wider text-brand">Compliance &amp; safety</p>
+        <p class="mt-1 text-center text-xs text-[#6e7681]">Deterministic, offline gates for regulated workflows &mdash; screen before you transact, dose before you advise</p>
+        <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+          {
+            safetyTools.map((t) => (
+              <button type="button" data-modal={t.slug} class="group relative block w-full overflow-hidden rounded-xl border border-brand/50 bg-surface-card p-6 text-left ring-1 ring-brand/30 transition hover:border-brand/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">
+                <div class="absolute inset-x-0 top-0 h-1 bg-brand/60"></div>
+                <span class="absolute right-3 top-3 rounded-full bg-brand/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand">New</span>
+                <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-brand/10 text-brand" set:html={icons[t.icon]} />
+                <h3 class="mt-5 text-base font-semibold">{t.title}</h3>
+                <p class="mt-2 text-sm leading-relaxed text-[#8b949e]">{t.body}</p>
+                <div class="mt-5 flex items-center justify-between">
+                  <span class="inline-block rounded-md border border-surface-border bg-surface px-3 py-1.5 font-mono text-xs text-brand">{t.endpoint}</span>
+                  <span class="text-xs font-medium text-brand opacity-0 transition group-hover:opacity-100">More →</span>
+                </div>
+              </button>
+            ))
+          }
+        </div>
       </section>
 
       <!-- CODE EXAMPLE -->
@@ -743,7 +822,7 @@ const mcpTools = [
               Works with Claude, Warp, Cursor — any MCP client
             </h2>
             <p class="mt-4 text-[#8b949e]">
-              Drop agent-toolbox into your MCP config and your agent gets all 15 tools out of the box — import validation, the hallucination firewall, secret &amp; PII scanning, token counting, and the full finance protection suite. No SDK, no glue code.
+              Drop agent-toolbox into your MCP config and your agent gets all 17 tools out of the box — import validation, the hallucination firewall, secret &amp; PII scanning, sanctions screening, medication safety, token counting, and the full finance protection suite. No SDK, no glue code.
             </p>
             <div class="mt-6 flex flex-wrap gap-2">
               {
@@ -783,7 +862,7 @@ const mcpTools = [
             <ul class="mt-6 space-y-3 text-sm text-[#8b949e]">
               <li class="flex items-center gap-2"><span class="text-brand">✓</span> 10 calls per IP</li>
               <li class="flex items-center gap-2"><span class="text-brand">✓</span> No auth needed</li>
-              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All 15 endpoints</li>
+              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All 17 endpoints</li>
             </ul>
             <a
               href="#code"
@@ -806,6 +885,14 @@ const mcpTools = [
               <li class="flex items-center justify-between border-b border-surface-border pb-2">
                 <span class="font-mono text-xs text-[#8b949e]">/v1/scan/pii <span class="ml-1 rounded bg-brand/15 px-1 text-[9px] font-semibold uppercase text-brand">new</span></span>
                 <span class="font-mono text-xs text-brand">0.0001 SOL</span>
+              </li>
+              <li class="flex items-center justify-between border-b border-surface-border pb-2">
+                <span class="font-mono text-xs text-[#8b949e]">/v1/compliance/sanctions <span class="ml-1 rounded bg-brand/15 px-1 text-[9px] font-semibold uppercase text-brand">new</span></span>
+                <span class="font-mono text-xs text-brand">0.0001 SOL</span>
+              </li>
+              <li class="flex items-center justify-between border-b border-surface-border pb-2">
+                <span class="font-mono text-xs text-[#8b949e]">/v1/health/rx-check <span class="ml-1 rounded bg-brand/15 px-1 text-[9px] font-semibold uppercase text-brand">new</span></span>
+                <span class="font-mono text-xs text-brand">0.0002 SOL</span>
               </li>
               <li class="flex items-center justify-between border-b border-surface-border pb-2">
                 <span class="font-mono text-xs text-[#8b949e]">/v1/verify</span>
