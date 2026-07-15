@@ -12,6 +12,8 @@ import {
   detectPromptInjection,
 } from "@agentoolbox/core";
 import { scanPii } from "@agentoolbox/privacy";
+import { screenSanctions } from "@agentoolbox/compliance";
+import { rxCheck } from "@agentoolbox/health";
 import {
   ValidateImportsSchema,
   VerifySchema,
@@ -123,6 +125,8 @@ v1.get("/pricing", (c) => {
       "/v1/tokens/count":         { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
       "/v1/scan/vulnerabilities": { credits: 2, lamports: 200_000, sol: 0.0002, usdApprox: "~$0.030" },
       "/v1/scan/pii":             { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
+      "/v1/compliance/sanctions": { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
+      "/v1/health/rx-check":      { credits: 2, lamports: 200_000, sol: 0.0002, usdApprox: "~$0.030" },
     },
     conversion: { solPerCredit: 0.0001, creditsPerSol: 10_000 },
     freeTier: { calls: 10, auth: false },
@@ -206,6 +210,105 @@ v1.post(
               ...(p.allowTypes !== undefined ? { allowTypes: p.allowTypes } : {}),
               ...(p.jurisdictions !== undefined ? { jurisdictions: p.jurisdictions } : {}),
               ...(p.redact !== undefined ? { redact: p.redact } : {}),
+            },
+          }
+        : {}),
+    });
+    return c.json(result);
+  }
+);
+
+// ── POST /v1/compliance/sanctions ─────────────────────────────────────────────
+v1.post(
+  "/compliance/sanctions",
+  zValidator(
+    "json",
+    z
+      .object({
+        name: z.string().min(1).max(512).optional(),
+        names: z.array(z.string().min(1).max(512)).max(100).optional(),
+        minScore: z.number().min(0).max(1).optional(),
+        lists: z.array(z.string()).max(50).optional(),
+        entityTypes: z
+          .array(z.enum(["individual", "entity", "vessel", "aircraft", "unknown"]))
+          .optional(),
+        fuzzy: z.boolean().optional(),
+      })
+      .refine((d) => d.name !== undefined || (d.names !== undefined && d.names.length > 0), {
+        message: "Provide `name` or a non-empty `names` array",
+      })
+  ),
+  (c) => {
+    const b = c.req.valid("json");
+    const result = screenSanctions({
+      ...(b.name !== undefined ? { name: b.name } : {}),
+      ...(b.names !== undefined ? { names: b.names } : {}),
+      ...(b.minScore !== undefined ? { minScore: b.minScore } : {}),
+      ...(b.lists !== undefined ? { lists: b.lists } : {}),
+      ...(b.entityTypes !== undefined ? { entityTypes: b.entityTypes } : {}),
+      ...(b.fuzzy !== undefined ? { fuzzy: b.fuzzy } : {}),
+    });
+    return c.json(result);
+  }
+);
+
+// ── POST /v1/health/rx-check ──────────────────────────────────────────────────
+v1.post(
+  "/health/rx-check",
+  zValidator(
+    "json",
+    z.object({
+      medications: z
+        .array(
+          z.object({
+            name: z.string().min(1).max(200),
+            dose: z.number().nonnegative().optional(),
+            unit: z.string().max(20).optional(),
+            route: z.string().max(40).optional(),
+            frequencyPerDay: z.number().positive().max(100).optional(),
+          })
+        )
+        .min(1)
+        .max(50),
+      patient: z
+        .object({
+          weightKg: z.number().positive().max(1000).optional(),
+          ageYears: z.number().nonnegative().max(150).optional(),
+        })
+        .optional(),
+      policy: z
+        .object({
+          blockSeverityAtOrAbove: z
+            .enum(["moderate", "major", "contraindicated"])
+            .optional(),
+        })
+        .optional(),
+    })
+  ),
+  (c) => {
+    const b = c.req.valid("json");
+    const result = rxCheck({
+      medications: b.medications.map((m) => ({
+        name: m.name,
+        ...(m.dose !== undefined ? { dose: m.dose } : {}),
+        ...(m.unit !== undefined ? { unit: m.unit } : {}),
+        ...(m.route !== undefined ? { route: m.route } : {}),
+        ...(m.frequencyPerDay !== undefined ? { frequencyPerDay: m.frequencyPerDay } : {}),
+      })),
+      ...(b.patient !== undefined
+        ? {
+            patient: {
+              ...(b.patient.weightKg !== undefined ? { weightKg: b.patient.weightKg } : {}),
+              ...(b.patient.ageYears !== undefined ? { ageYears: b.patient.ageYears } : {}),
+            },
+          }
+        : {}),
+      ...(b.policy !== undefined
+        ? {
+            policy: {
+              ...(b.policy.blockSeverityAtOrAbove !== undefined
+                ? { blockSeverityAtOrAbove: b.policy.blockSeverityAtOrAbove }
+                : {}),
             },
           }
         : {}),

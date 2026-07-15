@@ -8,6 +8,8 @@ import {
 import { validateImports } from "@agentoolbox/validator";
 import { runFirewall } from "@agentoolbox/firewall";
 import { scanPii, type PiiPolicy } from "@agentoolbox/privacy";
+import { screenSanctions, type SanctionsInput } from "@agentoolbox/compliance";
+import { rxCheck, type RxCheckInput } from "@agentoolbox/health";
 import {
   scanSecrets,
   detectPromptInjection,
@@ -337,6 +339,63 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ["trade", "portfolio"],
       },
     },
+    // ── Compliance ──────────────────────────────────────────────────────────────
+    {
+      name: "screen_sanctions",
+      description:
+        "Screens one or more party names (people, companies, vessels) against bundled OFAC sanctions lists (SDN + Consolidated) using deterministic exact, alias, and fuzzy matching. Returns PASS/FLAG/BLOCK with matched records and a signed certificate. Call before onboarding, paying, shipping to, or contracting with any counterparty.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "A single party name to screen." },
+          names: { type: "array", items: { type: "string" }, description: "Multiple names to screen in one call." },
+          minScore: { type: "number", description: "Fuzzy reporting floor 0..1 (default 0.85)." },
+          lists: { type: "array", items: { type: "string" }, description: "Restrict to source lists (e.g. ['OFAC-SDN'])." },
+          entityTypes: { type: "array", items: { type: "string", enum: ["individual", "entity", "vessel", "aircraft", "unknown"] }, description: "Restrict to these entity types." },
+          fuzzy: { type: "boolean", description: "Enable fuzzy matching (default true)." },
+        },
+      },
+    },
+    // ── Health ──────────────────────────────────────────────────────────────────
+    {
+      name: "rx_check",
+      description:
+        "Medication safety gate: deterministic unit-confusion, overdose, and drug-drug interaction checks for a list of medications. Returns PASS/FLAG/BLOCK findings with a signed certificate. Informational only — not medical advice. Call before an agent finalizes any medication list, prescription, or dosing instruction.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          medications: {
+            type: "array",
+            description: "Medications to evaluate.",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string", description: "Drug name (generic or brand)." },
+                dose: { type: "number", description: "Dose per administration." },
+                unit: { type: "string", description: "Dose unit (e.g. 'mg', 'mcg', 'ml')." },
+                route: { type: "string", description: "Route of administration (informational)." },
+                frequencyPerDay: { type: "number", description: "Administrations per day." },
+              },
+              required: ["name"],
+            },
+          },
+          patient: {
+            type: "object",
+            properties: {
+              weightKg: { type: "number", description: "Patient weight in kg (weight-based dosing)." },
+              ageYears: { type: "number", description: "Patient age in years." },
+            },
+          },
+          policy: {
+            type: "object",
+            properties: {
+              blockSeverityAtOrAbove: { type: "string", enum: ["moderate", "major", "contraindicated"], description: "Minimum severity that yields BLOCK (default: major)." },
+            },
+          },
+        },
+        required: ["medications"],
+      },
+    },
   ],
 }));
 
@@ -628,6 +687,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           };
         }
         const result = checkPosition(trade, portfolio, rules);
+        return json(result, result.verdict === "BLOCK");
+      }
+
+      case "screen_sanctions": {
+        const result = screenSanctions(args as SanctionsInput);
+        return json(result, result.verdict === "BLOCK");
+      }
+
+      case "rx_check": {
+        const result = rxCheck(args as unknown as RxCheckInput);
         return json(result, result.verdict === "BLOCK");
       }
 

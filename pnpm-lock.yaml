@@ -85,6 +85,9 @@ importers:
 
   packages/api:
     dependencies:
+      '@agentoolbox/compliance':
+        specifier: workspace:*
+        version: link:../compliance
       '@agentoolbox/core':
         specifier: workspace:*
         version: link:../core
@@ -94,6 +97,9 @@ importers:
       '@agentoolbox/firewall':
         specifier: workspace:*
         version: link:../firewall
+      '@agentoolbox/health':
+        specifier: workspace:*
+        version: link:../health
       '@agentoolbox/payments':
         specifier: workspace:*
         version: link:../payments
@@ -128,6 +134,18 @@ importers:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
+
+  packages/compliance:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.20.1)
 
   packages/core:
     devDependencies:
@@ -176,12 +194,27 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.20.1)
 
+  packages/health:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.20.1)
+
   packages/mcp:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.0.0
         version: 1.29.0(zod@3.25.76)
     devDependencies:
+      '@agentoolbox/compliance':
+        specifier: workspace:*
+        version: link:../compliance
       '@agentoolbox/core':
         specifier: workspace:*
         version: link:../core
@@ -191,6 +224,9 @@ importers:
       '@agentoolbox/firewall':
         specifier: workspace:*
         version: link:../firewall
+      '@agentoolbox/health':
+        specifier: workspace:*
+        version: link:../health
       '@agentoolbox/privacy':
         specifier: workspace:*
         version: link:../privacy

@@ -45,9 +45,11 @@
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "devDependencies": {
+    "@agentoolbox/compliance": "workspace:*",
     "@agentoolbox/core": "workspace:*",
     "@agentoolbox/finance": "workspace:*",
     "@agentoolbox/firewall": "workspace:*",
+    "@agentoolbox/health": "workspace:*",
     "@agentoolbox/privacy": "workspace:*",
     "@agentoolbox/validator": "workspace:*",
     "@types/node": "^22.0.0",

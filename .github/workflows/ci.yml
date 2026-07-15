@@ -30,6 +30,8 @@ jobs:
           pnpm --filter @agentoolbox/payments build
           pnpm --filter @agentoolbox/core build
           pnpm --filter @agentoolbox/privacy build
+          pnpm --filter @agentoolbox/compliance build
+          pnpm --filter @agentoolbox/health build
           pnpm --filter @agentoolbox/finance build
 
       - name: Run tests
@@ -41,6 +43,8 @@ jobs:
           pnpm --filter @agentoolbox/firewall typecheck
           pnpm --filter @agentoolbox/core typecheck
           pnpm --filter @agentoolbox/privacy typecheck
+          pnpm --filter @agentoolbox/compliance typecheck
+          pnpm --filter @agentoolbox/health typecheck
           pnpm --filter @agentoolbox/finance typecheck
           pnpm --filter agent-toolbox-sdk typecheck
           pnpm --filter @agentoolbox/api typecheck
