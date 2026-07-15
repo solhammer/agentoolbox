@@ -11,6 +11,18 @@ const PATH_OPTIONS = [
   { value: '/v1/verify', label: '/v1/verify' },
   { value: '/v1/validate/imports', label: '/v1/validate/imports' },
   { value: '/v1/distill', label: '/v1/distill' },
+  { value: '/v1/tokens/count', label: '/v1/tokens/count' },
+  { value: '/v1/scan/pii', label: '/v1/scan/pii' },
+  { value: '/v1/scan/secrets', label: '/v1/scan/secrets' },
+  { value: '/v1/scan/injection', label: '/v1/scan/injection' },
+  { value: '/v1/scan/vulnerabilities', label: '/v1/scan/vulnerabilities' },
+  { value: '/v1/finance/units', label: '/v1/finance/units' },
+  { value: '/v1/finance/price', label: '/v1/finance/price' },
+  { value: '/v1/finance/symbol', label: '/v1/finance/symbol' },
+  { value: '/v1/finance/token/risk', label: '/v1/finance/token/risk' },
+  { value: '/v1/finance/slippage', label: '/v1/finance/slippage' },
+  { value: '/v1/finance/order/risk', label: '/v1/finance/order/risk' },
+  { value: '/v1/finance/position/check', label: '/v1/finance/position/check' },
 ];
 
 const VERDICT_OPTIONS = [
