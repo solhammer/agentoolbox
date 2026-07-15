@@ -90,6 +90,101 @@ export interface HealthStatus {
   lastChecked: number;
 }
 
+// ── Raw API response shapes ───────────────────────────────────────────────────
+// The API returns slightly different shapes than the dashboard renders. These
+// interfaces describe the raw responses; the fetch helpers below normalize them
+// into the UI-facing types declared above so pages/hooks stay decoupled from the
+// backend wire format.
+
+interface RawRequestLogEntry {
+  id: string;
+  timestamp: number;
+  path: string;
+  method: string;
+  apiKey: string | null;
+  ip: string;
+  statusCode: number;
+  latencyMs: number;
+  creditCost: number;
+  verdict?: Verdict;
+  language?: string;
+  hallucinationRate?: number;
+  checkTypes?: string[];
+  hallucinatedPackages?: string[];
+}
+
+interface RawOverviewResponse {
+  period: string;
+  totalCalls: number;
+  activeKeys: number;
+  /** Fraction in the range 0–1. */
+  errorRate: number;
+  verdictDistribution: VerdictDistribution;
+  callsByEndpoint: Record<string, number>;
+  callsOverTime: Array<{ hour: string; count: number }>;
+  topHallucinatedPackages: HallucinatedPackage[];
+  ledgerKeys: number;
+  ledgerTotalCalls: number;
+}
+
+interface RawRequestsResponse {
+  entries: RawRequestLogEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+interface RawLedgerAccount {
+  key: string;
+  credits: number;
+  totalCalls: number;
+  createdAt: number;
+  lastSeen: number;
+}
+
+interface RawLedgerResponse {
+  accounts: RawLedgerAccount[];
+  total: number;
+  aggregate: { keys: number; totalCalls: number };
+}
+
+interface RawHallucinationsResponse {
+  topPackages: HallucinatedPackage[];
+  checkTypeBreakdown: Record<string, number>;
+}
+
+interface RawHealthStatus {
+  service: string;
+  status: HealthState;
+  /** May be null when a probe fails before timing. */
+  latencyMs: number | null;
+  /** ISO timestamp. */
+  lastChecked: string;
+  detail?: string;
+}
+
+/** Placeholder shown for anonymous (unauthenticated) requests. */
+const ANONYMOUS_KEY = 'anonymous';
+
+/** Normalizes a raw request log entry into the dashboard's UI shape. */
+function normalizeEntry(raw: RawRequestLogEntry): RequestLogEntry {
+  return {
+    id: raw.id,
+    timestamp: raw.timestamp,
+    path: raw.path,
+    apiKey: raw.apiKey ?? ANONYMOUS_KEY,
+    ip: raw.ip,
+    status: raw.statusCode,
+    verdict: raw.verdict ?? null,
+    latencyMs: raw.latencyMs,
+    creditCost: raw.creditCost,
+    language: raw.language,
+    hallucinatedPackages: raw.hallucinatedPackages,
+    checkTypes: raw.checkTypes,
+    hallucinationRate: raw.hallucinationRate,
+  };
+}
+
 // ── Configuration ───────────────────────────────────────────────────────────
 
 const DEFAULT_API_URL = 'https://api.agent-toolbox.ai';
@@ -133,11 +228,26 @@ async function request<T>(
 
 // ── Typed endpoint functions ──────────────────────────────────────────────────
 
-export function fetchOverview(): Promise<OverviewStats> {
-  return request<OverviewStats>('/admin/overview');
+export async function fetchOverview(): Promise<OverviewStats> {
+  const raw = await request<RawOverviewResponse>('/admin/overview');
+  const verdicts = raw.verdictDistribution;
+  const totalVerdicts = verdicts.PASS + verdicts.FLAG + verdicts.BLOCK;
+  return {
+    totalCalls24h: raw.totalCalls,
+    activeKeys: raw.activeKeys,
+    // API reports errorRate as a 0–1 fraction; the UI renders a percentage.
+    errorRate: raw.errorRate * 100,
+    // Not provided by the API: share of verdict-bearing calls that were BLOCK.
+    blockRate: totalVerdicts > 0 ? (verdicts.BLOCK / totalVerdicts) * 100 : 0,
+    verdictDistribution: verdicts,
+    callsOverTime: raw.callsOverTime.map((p) => ({
+      hour: p.hour,
+      calls: p.count,
+    })),
+  };
 }
 
-export function fetchRequests(params: {
+export async function fetchRequests(params: {
   limit?: number;
   offset?: number;
   path?: string;
@@ -149,11 +259,32 @@ export function fetchRequests(params: {
   if (params.path) query.set('path', params.path);
   if (params.verdict) query.set('verdict', params.verdict);
   const qs = query.toString();
-  return request<RequestsResponse>(`/admin/requests${qs ? `?${qs}` : ''}`);
+  const raw = await request<RawRequestsResponse>(
+    `/admin/requests${qs ? `?${qs}` : ''}`,
+  );
+  return {
+    requests: raw.entries.map(normalizeEntry),
+    total: raw.total,
+    limit: raw.limit,
+    offset: raw.offset,
+  };
 }
 
-export function fetchLedger(): Promise<LedgerResponse> {
-  return request<LedgerResponse>('/admin/ledger');
+export async function fetchLedger(): Promise<LedgerResponse> {
+  const raw = await request<RawLedgerResponse>('/admin/ledger');
+  const accounts: LedgerAccount[] = raw.accounts.map((a) => ({
+    apiKey: a.key,
+    credits: a.credits,
+    totalCalls: a.totalCalls,
+    createdAt: a.createdAt,
+    lastSeen: a.lastSeen,
+  }));
+  return {
+    accounts,
+    // Not provided by the API: sum of outstanding credits across accounts.
+    totalCredits: accounts.reduce((sum, a) => sum + a.credits, 0),
+    totalCalls: raw.aggregate.totalCalls,
+  };
 }
 
 export function adjustCredit(
@@ -161,18 +292,33 @@ export function adjustCredit(
   delta: number,
   reason?: string,
 ): Promise<void> {
-  return request<unknown>('/admin/ledger/adjust', {
-    method: 'POST',
-    body: JSON.stringify({ key, delta, ...(reason ? { reason } : {}) }),
-  }).then(() => undefined);
+  return request<unknown>(
+    `/admin/ledger/${encodeURIComponent(key)}/credit`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ delta, ...(reason ? { reason } : {}) }),
+    },
+  ).then(() => undefined);
 }
 
-export function fetchHallucinations(): Promise<HallucinationsResponse> {
-  return request<HallucinationsResponse>('/admin/hallucinations');
+export async function fetchHallucinations(): Promise<HallucinationsResponse> {
+  const raw = await request<RawHallucinationsResponse>('/admin/hallucinations');
+  const checkTypeBreakdown: CheckTypeBreakdown[] = Object.entries(
+    raw.checkTypeBreakdown,
+  )
+    .map(([checkType, count]) => ({ checkType, count }))
+    .sort((a, b) => b.count - a.count);
+  return { topPackages: raw.topPackages, checkTypeBreakdown };
 }
 
-export function fetchHealth(): Promise<HealthStatus[]> {
-  return request<HealthStatus[]>('/admin/health');
+export async function fetchHealth(): Promise<HealthStatus[]> {
+  const raw = await request<RawHealthStatus[]>('/admin/health');
+  return raw.map((s) => ({
+    service: s.service,
+    status: s.status,
+    latencyMs: s.latencyMs ?? 0,
+    lastChecked: s.lastChecked ? Date.parse(s.lastChecked) : 0,
+  }));
 }
 
 // ── Server-Sent Events live stream ────────────────────────────────────────────
@@ -192,8 +338,8 @@ export function createSSEStream(
 
   source.onmessage = (event: MessageEvent<string>) => {
     try {
-      const entry = JSON.parse(event.data) as RequestLogEntry;
-      onEntry(entry);
+      const raw = JSON.parse(event.data) as RawRequestLogEntry;
+      onEntry(normalizeEntry(raw));
     } catch {
       // Ignore malformed events.
     }

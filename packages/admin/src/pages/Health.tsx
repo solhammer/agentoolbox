@@ -3,26 +3,30 @@ import { Badge } from '../components/Badge';
 import { useHealth } from '../hooks/useAdminApi';
 import type { HealthStatus } from '../lib/api';
 
-const EXPECTED_SERVICES = [
-  'Redis',
-  'Solana RPC',
-  'Vectara API',
-  'PyPI',
-  'npm',
-  'crates.io',
+// Maps the API's service IDs (as returned by /admin/health) to friendly labels.
+// The IDs must match `checkAllServices()` in packages/api/src/admin/health.ts.
+const EXPECTED_SERVICES: { id: string; label: string }[] = [
+  { id: 'redis', label: 'Redis' },
+  { id: 'solana-rpc', label: 'Solana RPC' },
+  { id: 'vectara', label: 'Vectara API' },
+  { id: 'pypi', label: 'PyPI' },
+  { id: 'npm', label: 'npm' },
+  { id: 'crates.io', label: 'crates.io' },
 ];
 
 function mergeServices(data: HealthStatus[] | undefined): HealthStatus[] {
-  const byName = new Map((data ?? []).map((s) => [s.service, s]));
-  return EXPECTED_SERVICES.map(
-    (service) =>
-      byName.get(service) ?? {
-        service,
-        status: 'unknown' as const,
-        latencyMs: 0,
-        lastChecked: 0,
-      },
-  );
+  const byId = new Map((data ?? []).map((s) => [s.service, s]));
+  return EXPECTED_SERVICES.map(({ id, label }) => {
+    const found = byId.get(id);
+    return found
+      ? { ...found, service: label }
+      : {
+          service: label,
+          status: 'unknown' as const,
+          latencyMs: 0,
+          lastChecked: 0,
+        };
+  });
 }
 
 export function Health() {
