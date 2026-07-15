@@ -579,8 +579,18 @@ Add to your MCP config — your agent gets quality tools immediately:
 
 **Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`)  
 **Cursor** (`~/.cursor/mcp.json`)  
-**Warp:** Settings → MCP → Add server
+**Warp:** Settings → Agents → MCP servers → Add
 
+**Recommended** (after the package is published to npm):
+```json
+{
+  "mcpServers": {
+    "agent-toolbox": { "command": "npx", "args": ["-y", "@agentoolbox/mcp"] }
+  }
+}
+```
+
+**From source** (local dev / before publish):
 ```json
 {
   "mcpServers": {
@@ -597,6 +607,8 @@ Build first:
 git clone https://github.com/solhammer/agentoolbox
 cd agentoolbox && pnpm install && pnpm --filter @agentoolbox/mcp build
 ```
+
+No API key or env vars are required — the MCP server runs all 15 tools in-process (free public data sources only).
 
 **MCP tools available (all 15 endpoints):**
 
@@ -617,6 +629,22 @@ cd agentoolbox && pnpm install && pnpm --filter @agentoolbox/mcp build
 | `finance_slippage` | Pool depth / price-impact estimate |
 | `finance_order_risk` | Composite pre-trade gate |
 | `finance_position_check` | Deterministic position limits + kill-switch |
+
+### Use it in Warp & Oz cloud agents
+
+**Warp (local agents):** Settings → Agents → MCP servers → **+ Add**, choose the CLI/stdio option, and paste the config above.
+
+**Oz cloud agents / CLI:** this repo ships [`agent-toolbox.mcp.json`](agent-toolbox.mcp.json) — a ready MCP config object you can pass directly:
+
+```bash
+# from the committed config file
+oz agent run --mcp ./agent-toolbox.mcp.json --prompt "scan this text for PII before I log it"
+
+# or inline
+oz agent run --mcp '{"agent-toolbox":{"command":"npx","args":["-y","@agentoolbox/mcp"]}}' --prompt "..."
+```
+
+After adding it in Warp, reference it by UUID for reuse (`oz mcp list` or Settings → Agents → MCP servers), or declare it under `mcp_servers` in an agent config file passed with `-f`.
 
 ---
 
