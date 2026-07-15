@@ -102,6 +102,8 @@ app.get("/", (c) =>
       financeSlippage: "POST /v1/finance/slippage",
       financeOrderRisk: "POST /v1/finance/order/risk",
       financePositionCheck: "POST /v1/finance/position/check",
+      complianceSanctions: "POST /v1/compliance/sanctions",
+      healthRxCheck: "POST /v1/health/rx-check",
     },
     docs: "https://agent-toolbox.ai/docs",
   })

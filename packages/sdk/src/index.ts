@@ -25,4 +25,22 @@ export type {
   PiiScanResult,
 } from "./types.js";
 
+export type {
+  SanctionEntityType,
+  SanctionMatchType,
+  SanctionsInput,
+  SanctionMatch,
+  SanctionsResult,
+} from "./types.js";
+
+export type {
+  RxFindingType,
+  RxSeverity,
+  RxBlockSeverity,
+  RxMedicationInput,
+  RxCheckInput,
+  RxFinding,
+  RxCheckResult,
+} from "./types.js";
+
 export { AgentoolboxClient } from "./client.js";

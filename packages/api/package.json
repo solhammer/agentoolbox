@@ -13,9 +13,11 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@agentoolbox/compliance": "workspace:*",
     "@agentoolbox/core": "workspace:*",
     "@agentoolbox/finance": "workspace:*",
     "@agentoolbox/firewall": "workspace:*",
+    "@agentoolbox/health": "workspace:*",
     "@agentoolbox/payments": "workspace:*",
     "@agentoolbox/privacy": "workspace:*",
     "@agentoolbox/validator": "workspace:*",

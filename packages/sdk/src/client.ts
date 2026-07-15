@@ -7,6 +7,10 @@ import type {
   DistillResult,
   PiiScanInput,
   PiiScanResult,
+  SanctionsInput,
+  SanctionsResult,
+  RxCheckInput,
+  RxCheckResult,
 } from "./types.js";
 
 export interface AgentoolboxClientOptions {
@@ -152,6 +156,30 @@ export class AgentoolboxClient {
    */
   async scanPii(input: PiiScanInput): Promise<PiiScanResult> {
     return this.post<PiiScanResult>("/v1/scan/pii", input);
+  }
+
+  /**
+   * Screen one or more party names against bundled OFAC sanctions lists.
+   * Deterministic exact + fuzzy matching; returns PASS/FLAG/BLOCK with matches.
+   *
+   * @example
+   * const r = await client.screenSanctions({ name: counterpartyName });
+   * if (r.verdict === "BLOCK") throw new Error("Sanctions hit: " + r.matches[0]?.listedName);
+   */
+  async screenSanctions(input: SanctionsInput): Promise<SanctionsResult> {
+    return this.post<SanctionsResult>("/v1/compliance/sanctions", input);
+  }
+
+  /**
+   * Medication safety gate: unit/dose sanity + drug-drug interaction screening.
+   * Deterministic and offline. Informational only — not medical advice.
+   *
+   * @example
+   * const r = await client.rxCheck({ medications: [{ name: "warfarin" }, { name: "ibuprofen" }] });
+   * if (r.verdict === "BLOCK") console.warn(r.findings.map((f) => f.message));
+   */
+  async rxCheck(input: RxCheckInput): Promise<RxCheckResult> {
+    return this.post<RxCheckResult>("/v1/health/rx-check", input);
   }
 
   /**

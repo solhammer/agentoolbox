@@ -125,3 +125,75 @@ export interface PiiScanResult {
   filename?: string;
   latencyMs: number;
 }
+
+// Mirror of @agentoolbox/compliance types (no internal dep in SDK)
+export type SanctionEntityType = "individual" | "entity" | "vessel" | "aircraft" | "unknown";
+export type SanctionMatchType = "exact" | "alias" | "fuzzy";
+
+export interface SanctionsInput {
+  name?: string;
+  names?: string[];
+  minScore?: number;
+  lists?: string[];
+  entityTypes?: SanctionEntityType[];
+  fuzzy?: boolean;
+}
+
+export interface SanctionMatch {
+  query: string;
+  listedName: string;
+  matchedAlias?: string;
+  score: number;
+  matchType: SanctionMatchType;
+  list: string;
+  program?: string;
+  entityType: SanctionEntityType;
+  id?: string;
+  jurisdiction?: string;
+}
+
+export interface SanctionsResult {
+  verdict: Verdict;
+  matches: SanctionMatch[];
+  counts: { total: number; block: number; flag: number };
+  screened: number;
+  datasetDate: string;
+  certificate: string;
+  latencyMs: number;
+}
+
+// Mirror of @agentoolbox/health types (no internal dep in SDK)
+export type RxFindingType = "unit" | "dose" | "interaction";
+export type RxSeverity = "low" | "moderate" | "major" | "contraindicated";
+export type RxBlockSeverity = "moderate" | "major" | "contraindicated";
+
+export interface RxMedicationInput {
+  name: string;
+  dose?: number;
+  unit?: string;
+  route?: string;
+  frequencyPerDay?: number;
+}
+
+export interface RxCheckInput {
+  medications: RxMedicationInput[];
+  patient?: { weightKg?: number; ageYears?: number };
+  policy?: { blockSeverityAtOrAbove?: RxBlockSeverity };
+}
+
+export interface RxFinding {
+  type: RxFindingType;
+  severity: RxSeverity;
+  drugs: string[];
+  message: string;
+  reference?: string;
+}
+
+export interface RxCheckResult {
+  verdict: Verdict;
+  findings: RxFinding[];
+  counts: Record<RxSeverity, number>;
+  certificate: string;
+  latencyMs: number;
+  disclaimer: string;
+}
