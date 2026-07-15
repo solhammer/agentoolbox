@@ -1,6 +1,6 @@
 {
   "agent-toolbox": {
     "command": "npx",
-    "args": ["-y", "@agentoolbox/mcp"]
+    "args": ["-y", "agent-toolbox-mcp"]
   }
 }

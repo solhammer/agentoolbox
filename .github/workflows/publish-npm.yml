@@ -54,7 +54,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-mcp:
-    name: Publish @agentoolbox/mcp
+    name: Publish agent-toolbox-mcp
     # MCP: on mcp-v* tags. The server bundles the workspace libs via tsup,
     # so those libs must be built before the bundle.
     if: startsWith(github.ref, 'refs/tags/mcp-v')
@@ -87,7 +87,7 @@ jobs:
           pnpm --filter @agentoolbox/finance build
 
       - name: Build MCP bundle
-        run: pnpm --filter @agentoolbox/mcp build
+        run: pnpm --filter agent-toolbox-mcp build
 
       - name: Publish to npm
         run: pnpm publish --no-git-checks --access public

@@ -3,7 +3,7 @@
   "name": "io.github.solhammer/agent-toolbox",
   "title": "Agent Toolbox",
   "description": "15 agent-callable quality tools: import validation, hallucination firewall, PII/PHI/PCI redaction, secret & injection scanning, token counting, OSV vulnerability checks, and a finance protection suite.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "websiteUrl": "https://agent-toolbox.ai",
   "repository": {
     "url": "https://github.com/solhammer/agentoolbox",
@@ -14,8 +14,8 @@
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
-      "identifier": "@agentoolbox/mcp",
-      "version": "0.1.0",
+      "identifier": "agent-toolbox-mcp",
+      "version": "0.1.1",
       "transport": {
         "type": "stdio"
       }
