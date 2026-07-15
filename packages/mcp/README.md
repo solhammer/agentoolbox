@@ -1,4 +1,4 @@
-# agent-toolbox-mcp
+# agentoolbox-mcp
 MCP server for [agent-toolbox.ai](https://agent-toolbox.ai) — the quality layer for AI agents. Exposes code- and output-quality tools to Claude, Cursor, Warp, Cline, and any MCP-compatible client over **stdio**.
 ## Tools (15)
 Core: `validate_imports`, `verify_output`, `distill_context`
@@ -10,7 +10,7 @@ No clone or build needed:
 ```json
 {
   "mcpServers": {
-    "agent-toolbox": { "command": "npx", "args": ["-y", "agent-toolbox-mcp"] }
+    "agent-toolbox": { "command": "npx", "args": ["-y", "agentoolbox-mcp"] }
   }
 }
 ```
@@ -19,7 +19,7 @@ Or build from source:
 git clone https://github.com/solhammer/agentoolbox
 cd agentoolbox
 pnpm install
-pnpm --filter "agent-toolbox-mcp..." build   # builds the server + its workspace deps
+pnpm --filter "agentoolbox-mcp..." build   # builds the server + its workspace deps
 ```
 This produces `packages/mcp/dist/index.js` (use `"command": "node"` with its absolute path).
 ## Configure your MCP client

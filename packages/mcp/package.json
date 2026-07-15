@@ -1,6 +1,6 @@
 {
-  "name": "agent-toolbox-mcp",
-  "version": "0.1.1",
+  "name": "agentoolbox-mcp",
+  "version": "0.1.2",
   "mcpName": "io.github.solhammer/agent-toolbox",
   "description": "agent-toolbox.ai MCP server — exposes quality tools to Claude, Warp, Cursor, and any MCP-compatible agent",
   "homepage": "https://agent-toolbox.ai",

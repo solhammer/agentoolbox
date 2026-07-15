@@ -585,7 +585,7 @@ Add to your MCP config — your agent gets quality tools immediately:
 ```json
 {
   "mcpServers": {
-    "agent-toolbox": { "command": "npx", "args": ["-y", "agent-toolbox-mcp"] }
+    "agent-toolbox": { "command": "npx", "args": ["-y", "agentoolbox-mcp"] }
   }
 }
 ```
@@ -605,7 +605,7 @@ Add to your MCP config — your agent gets quality tools immediately:
 Build first:
 ```bash
 git clone https://github.com/solhammer/agentoolbox
-cd agentoolbox && pnpm install && pnpm --filter agent-toolbox-mcp build
+cd agentoolbox && pnpm install && pnpm --filter agentoolbox-mcp build
 ```
 
 No API key or env vars are required — the MCP server runs all 15 tools in-process (free public data sources only).
@@ -641,7 +641,7 @@ No API key or env vars are required — the MCP server runs all 15 tools in-proc
 oz agent run --mcp ./agent-toolbox.mcp.json --prompt "scan this text for PII before I log it"
 
 # or inline
-oz agent run --mcp '{"agent-toolbox":{"command":"npx","args":["-y","agent-toolbox-mcp"]}}' --prompt "..."
+oz agent run --mcp '{"agent-toolbox":{"command":"npx","args":["-y","agentoolbox-mcp"]}}' --prompt "..."
 ```
 
 After adding it in Warp, reference it by UUID for reuse (`oz mcp list` or Settings → Agents → MCP servers), or declare it under `mcp_servers` in an agent config file passed with `-f`.
