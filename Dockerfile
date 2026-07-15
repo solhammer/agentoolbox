@@ -8,6 +8,8 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
 COPY packages/validator/package.json ./packages/validator/
 COPY packages/firewall/package.json ./packages/firewall/
 COPY packages/payments/package.json ./packages/payments/
+COPY packages/core/package.json ./packages/core/
+COPY packages/privacy/package.json ./packages/privacy/
 COPY packages/finance/package.json ./packages/finance/
 COPY packages/api/package.json ./packages/api/
 
@@ -21,6 +23,10 @@ COPY packages/firewall/src ./packages/firewall/src
 COPY packages/firewall/tsconfig.json ./packages/firewall/
 COPY packages/payments/src ./packages/payments/src
 COPY packages/payments/tsconfig.json ./packages/payments/
+COPY packages/core/src ./packages/core/src
+COPY packages/core/tsconfig.json ./packages/core/
+COPY packages/privacy/src ./packages/privacy/src
+COPY packages/privacy/tsconfig.json ./packages/privacy/
 COPY packages/finance/src ./packages/finance/src
 COPY packages/finance/tsconfig.json ./packages/finance/
 COPY packages/api/src ./packages/api/src
@@ -30,6 +36,8 @@ COPY packages/api/tsconfig.json ./packages/api/
 RUN pnpm --filter @agentoolbox/validator build
 RUN pnpm --filter @agentoolbox/firewall build
 RUN pnpm --filter @agentoolbox/payments build
+RUN pnpm --filter @agentoolbox/core build
+RUN pnpm --filter @agentoolbox/privacy build
 RUN pnpm --filter @agentoolbox/finance build
 RUN pnpm --filter @agentoolbox/api build
 

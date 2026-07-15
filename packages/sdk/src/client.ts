@@ -5,6 +5,8 @@ import type {
   FirewallResult,
   DistillInput,
   DistillResult,
+  PiiScanInput,
+  PiiScanResult,
 } from "./types.js";
 
 export interface AgentoolboxClientOptions {
@@ -137,6 +139,19 @@ export class AgentoolboxClient {
    */
   async scanInjection(input: { input: string; context?: string }): Promise<unknown> {
     return this.post<unknown>("/v1/scan/injection", input);
+  }
+
+  /**
+   * Scan text for PII/PHI/PCI before it crosses a trust boundary (logs, tickets,
+   * third-party APIs, persistence). Deterministic, checksum-validated detection
+   * with redaction and a signed certificate. Raw values are never echoed back.
+   *
+   * @example
+   * const { verdict, redactedText } = await client.scanPii({ text: outbound });
+   * if (verdict === "BLOCK") return; // or send redactedText instead
+   */
+  async scanPii(input: PiiScanInput): Promise<PiiScanResult> {
+    return this.post<PiiScanResult>("/v1/scan/pii", input);
   }
 
   /**

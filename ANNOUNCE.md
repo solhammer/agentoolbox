@@ -359,5 +359,154 @@ All data sources are free and keyless: CoinGecko, DexScreener, yahoo-finance2, R
 
 ### One-liner (Twitter bio / tagline use)
 
-agent-toolbox.ai: 14 APIs for AI agent quality. Hallucination firewall + finance protection suite. Catch bad code, bad trades, and bad actors. Pay per call in SOL.
+agent-toolbox.ai: 15 APIs for AI agent quality. Hallucination firewall + PII firewall + finance protection suite. Catch bad code, bad trades, bad actors, and data leaks. Pay per call in SOL.
+
+---
+
+## PII / PHI / PCI Egress Firewall — Launch Announcement
+
+### Twitter / X Thread
+
+**Tweet 1 (hook):**
+Your AI agent just wrote a customer's SSN and credit card into a log file.
+
+That's a reportable breach. GDPR fines go up to €20M.
+
+We shipped a firewall for exactly this. 🧵
+
+**Tweet 2 (what it is):**
+POST /v1/scan/pii — the deterministic gate your agent calls BEFORE it logs, sends, or stores text.
+
+Detects & redacts:
+🔒 SSNs, credit cards (Luhn), IBANs (ISO-7064), UK NHS #s (mod-11), Canadian SIN, emails, phones, IPs
+
+Returns PASS/FLAG/BLOCK + a redacted copy + a signed certificate.
+
+**Tweet 3 (why external):**
+Why not just prompt the model to "not leak PII"?
+
+Because structured IDs need checksums (Luhn/ISO-7064/mod-11) and jurisdiction rules that LLMs approximate but don't verify. Models both miss IBANs and over-redact "Paris."
+
+This is deterministic. <20ms. No data leaves the box.
+
+**Tweet 4 (use cases):**
+Every industry with customers, patients, or employees:
+• Support bots — strip SSNs/cards before tickets & transcripts
+• Health copilots — keep PHI out of prompts & non-BAA vendors
+• Fintech — block raw PANs (PCI)
+• HR — guard employee records
+• GDPR/HIPAA/CCPA audit trail
+
+**Tweet 5 (CTA):**
+Try it free (10 calls, no auth):
+
+curl -X POST https://api.agent-toolbox.ai/v1/scan/pii \\
+  -H "Content-Type: application/json" \\
+  -d '{"text":"Patient SSN 219-09-9999, card 4111 1111 1111 1111"}'
+
+GitHub: github.com/solhammer/agentoolbox
+0.0001 SOL/call. Also an MCP tool.
+
+---
+
+### Hacker News — Show HN
+
+**Title:** Show HN: A PII/PHI/PCI firewall AI agents call before they log or send anything
+
+**Text:**
+Agents move text across trust boundaries constantly — writing logs, opening tickets, calling third-party APIs, persisting transcripts. When that text contains a SSN, a card number, or a medical identifier, one unguarded egress becomes a reportable breach.
+
+So I built `POST /v1/scan/pii`: a deterministic pre-egress gate.
+
+- Checksum-validated detectors: credit cards (Luhn), IBANs (ISO 7064 mod-97), UK NHS numbers (mod-11), Canadian SIN (Luhn). Checksum-gating drives structured-identifier false positives near zero.
+- Structural detectors: US SSN (SSA area/group/serial rules), email, phone, IPv4, with overlap resolution so the same digits aren't double-counted.
+- Categories (PII/PHI/PCI) + severity, PASS/FLAG/BLOCK verdict, a format-preserving masked preview, a fully redacted copy of the input, and a SHA-256 certificate bound to the input hash (never the plaintext).
+- Enforcement modes: block / flag / audit. Policy controls: severity threshold, allowTypes, jurisdictions, redact on/off.
+- Pure function: no network calls, nothing is stored, raw values are never returned. ~<20ms.
+
+Why external instead of prompting the model: structured IDs need real checksums and jurisdiction formats. Models under-detect (miss IBANs) and over-redact (flag "Paris"). Cloud DLP exists but isn't an agent-first, per-call gate with a signed certificate.
+
+Free tier: 10 calls/IP. Paid: 0.0001 SOL/call. Also exposed as an MCP tool (`scan_pii`).
+
+Live: https://api.agent-toolbox.ai
+GitHub (MIT, self-hostable): https://github.com/solhammer/agentoolbox
+
+---
+
+### Reddit — r/LocalLLaMA, r/MachineLearning, r/AIAgents, r/devops
+
+**Title:** I built a deterministic PII/PHI/PCI firewall that agents call before they log or send anything
+
+**Body:**
+Been building agents and kept hitting the same landmine: the agent helpfully writes a full support transcript — SSN, card, DOB and all — straight into a log sink or a third-party tool. That's a breach, not a bug report.
+
+`POST /v1/scan/pii` is the gate that runs in the propose → validate → execute gap:
+
+- Deterministic, checksum-validated detectors: credit card (Luhn), IBAN (ISO-7064), UK NHS (mod-11), Canadian SIN (Luhn)
+- Structural: US SSN, email, phone, IPv4 (with overlap resolution)
+- PASS/FLAG/BLOCK + PII/PHI/PCI categories + severity
+- Redacted copy of the text + SHA-256 certificate
+- Modes: block / flag / audit; policy: severity threshold, allowTypes, jurisdictions
+- No network calls, nothing stored, raw values never echoed back, ~<20ms
+
+Why not just prompt the model? Structured identifiers need checksums and jurisdiction rules — models miss IBANs and over-redact ordinary words. This is deterministic and auditable.
+
+Free tier: 10 calls/IP. Pay-per-call in SOL. MCP tool included (`scan_pii`).
+
+GitHub (MIT): https://github.com/solhammer/agentoolbox
+Live: https://api.agent-toolbox.ai
+
+---
+
+### LinkedIn
+
+An AI support agent can leak a customer's SSN into a log line faster than any human ever could — and at scale. Under GDPR that's a reportable breach with fines up to €20M; under HIPAA, up to $1.5M per violation category.
+
+This week we shipped the agent-toolbox.ai **PII / PHI / PCI Egress Firewall**: `POST /v1/scan/pii`.
+
+It's the deterministic gate an agent calls before text crosses a trust boundary — a log, a ticket, a third-party API, a database write. It detects and redacts regulated personal data, returns a PASS/FLAG/BLOCK verdict, and issues a tamper-evident certificate for your audit trail.
+
+What makes it different from "just ask the model nicely":
+• Checksum-validated detection — credit cards (Luhn), IBANs (ISO-7064), UK NHS numbers (mod-11), Canadian SIN — so false positives stay near zero
+• PII / PHI / PCI categorisation with severity and policy controls (block / flag / audit, jurisdictions, allowlists)
+• Deterministic, no data leaves the box, raw values never returned, sub-20ms
+
+Every industry with customers, patients, or employees needs this. Free tier: 10 calls/IP. Pay-per-call in SOL. Also an MCP tool.
+
+Live: agent-toolbox.ai | Open source (MIT): github.com/solhammer/agentoolbox
+
+---
+
+### Product Hunt
+
+**Tagline:** The privacy firewall for AI agents — stop data leaks before they happen
+
+**Description:**
+AI agents write logs, file tickets, call APIs, and store transcripts — and any of those can leak a customer's SSN, card number, or medical record. `POST /v1/scan/pii` is the deterministic pre-egress gate that detects and redacts PII/PHI/PCI before it leaves the boundary.
+
+• Checksum-validated detectors (Luhn, ISO-7064, mod-11) for cards, IBANs, NHS numbers, SIN — plus SSN, email, phone, IP
+• PASS/FLAG/BLOCK + redacted copy + SHA-256 certificate
+• block / flag / audit modes; jurisdiction + type policy controls
+• No network calls, nothing stored, raw values never returned, <20ms
+• REST API + MCP tool + TypeScript SDK
+
+Free: 10 calls/IP, no signup. Paid: 0.0001 SOL/call. Open source (MIT).
+
+---
+
+### Newsletter blurb (TLDR / The Batch / Hacker Newsletter)
+
+**agent-toolbox.ai ships a PII/PHI/PCI firewall for AI agents** — `POST /v1/scan/pii` is a deterministic, sub-20ms gate agents call before logging, sending, or storing text. Checksum-validated detectors (Luhn cards, ISO-7064 IBANs, mod-11 NHS numbers, SIN) plus SSN/email/phone/IP, with PASS/FLAG/BLOCK verdicts, a redacted copy, and a signed certificate. Modes: block/flag/audit. No data leaves the box; raw values are never returned. Free tier 10 calls/IP; pay-per-call in SOL; MCP tool included. github.com/solhammer/agentoolbox
+
+### One-liner
+
+agent-toolbox.ai PII firewall: your agent's last line of defense before it leaks a SSN. Deterministic, checksum-validated, signed. `POST /v1/scan/pii`.
+
+### Directories to submit to
+
+- theresanaiforthat.com/submit
+- futuretools.io/submit-a-tool
+- mcp.so (MCP server listing — now 15 tools)
+- r/gdpr, r/privacy, r/healthIT (compliance-focused communities)
+- Data-privacy / DLP roundups and newsletters
 

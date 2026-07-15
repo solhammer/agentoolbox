@@ -40,3 +40,15 @@ export {
   type GuardianRules,
   type PositionCheckResult,
 } from "./checks/position.js";
+export {
+  resolveSymbol,
+  type SymbolMatch,
+  type SymbolResolveInput,
+  type SymbolResolveResult,
+} from "./checks/symbol.js";
+export {
+  checkOrder,
+  type NamedCheck,
+  type OrderRiskInput,
+  type OrderRiskResult,
+} from "./checks/order.js";

@@ -1,26 +1,57 @@
 {
   "name": "@agentoolbox/mcp",
   "version": "0.1.0",
+  "mcpName": "io.github.solhammer/agent-toolbox",
   "description": "agent-toolbox.ai MCP server — exposes quality tools to Claude, Warp, Cursor, and any MCP-compatible agent",
   "homepage": "https://agent-toolbox.ai",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "agentoolbox-mcp": "./dist/index.js"
   },
   "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "llms-install.md"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai-agents",
+    "hallucination",
+    "code-quality",
+    "slopsquatting",
+    "llm"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/solhammer/agentoolbox.git",
+    "directory": "packages/mcp"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "node --watch --import tsx/esm src/index.ts",
-    "build": "tsc -p tsconfig.json && chmod +x dist/index.js",
+    "build": "tsup",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@agentoolbox/firewall": "workspace:*",
-    "@agentoolbox/validator": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "devDependencies": {
+    "@agentoolbox/core": "workspace:*",
+    "@agentoolbox/finance": "workspace:*",
+    "@agentoolbox/firewall": "workspace:*",
+    "@agentoolbox/privacy": "workspace:*",
+    "@agentoolbox/validator": "workspace:*",
     "@types/node": "^22.0.0",
+    "tsup": "^8.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.5.0"
   }

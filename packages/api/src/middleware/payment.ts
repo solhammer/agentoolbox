@@ -25,6 +25,7 @@ const ENDPOINT_COSTS: Record<string, number> = {
   "/v1/distill": 1,
   "/v1/scan/secrets": 1,
   "/v1/scan/injection": 1,
+  "/v1/scan/pii": 1,
   "/v1/tokens/count": 1,
   "/v1/scan/vulnerabilities": 2,
   "/v1/finance/units": 1,
@@ -40,6 +41,15 @@ const ENDPOINT_COSTS: Record<string, number> = {
 const FREE_TIER_LIMIT = 10;
 
 export const paymentMiddleware: MiddlewareHandler = async (c, next) => {
+  // TEST_MODE=1 bypasses all payment checks for local integration testing.
+  // Never set this in production.
+  if (process.env["TEST_MODE"] === "1") {
+    c.set("apiKey", "test");
+    c.set("creditCost", 0);
+    await next();
+    return;
+  }
+
   const authHeader = c.req.header("Authorization");
   const path = new URL(c.req.url).pathname;
   const cost = ENDPOINT_COSTS[path] ?? 1;

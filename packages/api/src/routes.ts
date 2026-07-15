@@ -3,11 +3,15 @@ import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { validateImports } from "@agentoolbox/validator";
 import { runFirewall } from "@agentoolbox/firewall";
-import { distillContext } from "./distiller.js";
-import { countTokens, countMessageTokens } from "./counters/tokens.js";
-import { scanVulnerabilities } from "./scanners/vulnerabilities.js";
-import { scanSecrets } from "./scanners/secrets.js";
-import { detectPromptInjection } from "./scanners/injection.js";
+import {
+  distillContext,
+  countTokens,
+  countMessageTokens,
+  scanVulnerabilities,
+  scanSecrets,
+  detectPromptInjection,
+} from "@agentoolbox/core";
+import { scanPii } from "@agentoolbox/privacy";
 import {
   ValidateImportsSchema,
   VerifySchema,
@@ -118,6 +122,7 @@ v1.get("/pricing", (c) => {
       "/v1/distill":              { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
       "/v1/tokens/count":         { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
       "/v1/scan/vulnerabilities": { credits: 2, lamports: 200_000, sol: 0.0002, usdApprox: "~$0.030" },
+      "/v1/scan/pii":             { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
     },
     conversion: { solPerCredit: 0.0001, creditsPerSol: 10_000 },
     freeTier: { calls: 10, auth: false },
@@ -163,6 +168,49 @@ v1.post(
     const { input, context } = c.req.valid("json");
     const result = detectPromptInjection(input);
     return c.json({ ...result, context });
+  }
+);
+
+// ── POST /v1/scan/pii ─────────────────────────────────────────────────────────
+v1.post(
+  "/scan/pii",
+  zValidator(
+    "json",
+    z.object({
+      text: z.string().min(1).max(200_000),
+      filename: z.string().optional(),
+      policy: z
+        .object({
+          mode: z.enum(["block", "flag", "audit"]).optional(),
+          blockSeverityAtOrAbove: z.enum(["low", "medium", "high", "critical"]).optional(),
+          allowTypes: z.array(z.string()).optional(),
+          jurisdictions: z.array(z.string()).optional(),
+          redact: z.boolean().optional(),
+        })
+        .optional(),
+    })
+  ),
+  (c) => {
+    const b = c.req.valid("json");
+    const p = b.policy;
+    const result = scanPii({
+      text: b.text,
+      ...(b.filename !== undefined ? { filename: b.filename } : {}),
+      ...(p !== undefined
+        ? {
+            policy: {
+              ...(p.mode !== undefined ? { mode: p.mode } : {}),
+              ...(p.blockSeverityAtOrAbove !== undefined
+                ? { blockSeverityAtOrAbove: p.blockSeverityAtOrAbove }
+                : {}),
+              ...(p.allowTypes !== undefined ? { allowTypes: p.allowTypes } : {}),
+              ...(p.jurisdictions !== undefined ? { jurisdictions: p.jurisdictions } : {}),
+              ...(p.redact !== undefined ? { redact: p.redact } : {}),
+            },
+          }
+        : {}),
+    });
+    return c.json(result);
   }
 );
 

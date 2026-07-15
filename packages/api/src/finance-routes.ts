@@ -7,12 +7,8 @@ import {
   checkRug,
   checkLiquidity,
   checkPosition,
-  searchDex,
-  searchCoin,
-  searchStock,
-  type Chain,
-  type Verdict,
-  type FinanceCheckResult,
+  resolveSymbol,
+  checkOrder,
   type TradeProposal,
   type PortfolioSnapshot,
   type GuardianRules,
@@ -88,19 +84,6 @@ financeRoutes.post(
 );
 
 // ── POST /v1/finance/symbol ───────────────────────────────────────────────────
-interface SymbolMatch {
-  symbol: string;
-  name: string;
-  exchange?: string;
-  liquidity?: number;
-}
-
-function nameMatches(candidate: string, expected: string): boolean {
-  const a = candidate.toLowerCase();
-  const b = expected.toLowerCase();
-  return a.includes(b) || b.includes(a);
-}
-
 financeRoutes.post(
   "/symbol",
   zValidator(
@@ -114,55 +97,13 @@ financeRoutes.post(
   ),
   async (c) => {
     const b = c.req.valid("json");
-    let matches: SymbolMatch[] = [];
-
-    if (b.assetType === "crypto") {
-      const [dexPairs, coins] = await Promise.all([
-        searchDex(b.symbol),
-        searchCoin(b.symbol),
-      ]);
-      const relevantPairs = b.chain
-        ? dexPairs.filter((p) => p.chainId === b.chain)
-        : dexPairs;
-      const dexMatches: SymbolMatch[] = relevantPairs.map((p) => ({
-        symbol: p.baseToken.symbol,
-        name: p.baseToken.name,
-        ...(p.liquidity?.usd !== undefined ? { liquidity: p.liquidity.usd } : {}),
-      }));
-      const coinMatches: SymbolMatch[] = coins.map((co) => ({
-        symbol: co.symbol.toUpperCase(),
-        name: co.name,
-      }));
-      matches = [...dexMatches, ...coinMatches].sort(
-        (x, y) => (y.liquidity ?? 0) - (x.liquidity ?? 0)
-      );
-    } else {
-      const results = await searchStock(b.symbol);
-      matches = results.map((r) => ({
-        symbol: r.symbol,
-        name: r.name,
-        ...(r.exchange ? { exchange: r.exchange } : {}),
-      }));
-    }
-
-    const found = matches.length > 0;
-    const ambiguous = matches.length > 1;
-
-    let verdict: Verdict;
-    if (!found) {
-      verdict = "BLOCK";
-    } else if (
-      b.expectedName !== undefined &&
-      !matches.some((m) => nameMatches(m.name, b.expectedName!))
-    ) {
-      verdict = "FLAG";
-    } else if (ambiguous) {
-      verdict = "FLAG";
-    } else {
-      verdict = "PASS";
-    }
-
-    return c.json({ found, matches, ambiguous, verdict });
+    const result = await resolveSymbol({
+      symbol: b.symbol,
+      assetType: b.assetType,
+      ...(b.expectedName !== undefined ? { expectedName: b.expectedName } : {}),
+      ...(b.chain !== undefined ? { chain: b.chain } : {}),
+    });
+    return c.json(result);
   }
 );
 
@@ -227,8 +168,6 @@ financeRoutes.post(
 );
 
 // ── POST /v1/finance/order/risk ───────────────────────────────────────────────
-type NamedCheck = FinanceCheckResult & { name: string };
-
 financeRoutes.post(
   "/order/risk",
   zValidator(
@@ -246,60 +185,17 @@ financeRoutes.post(
   ),
   async (c) => {
     const b = c.req.valid("json");
-    const start = Date.now();
-    const checks: NamedCheck[] = [];
-
-    if (b.tokenAddress !== undefined) {
-      const chain = (b.chain ?? "solana") as Chain;
-      const [rug, liq] = await Promise.all([
-        checkRug({ address: b.tokenAddress, chain }),
-        checkLiquidity({
-          tokenAddress: b.tokenAddress,
-          chain: b.chain ?? "solana",
-          tradeUsd: b.tradeUsd,
-        }),
-      ]);
-      checks.push({ ...rug, name: "rug" }, { ...liq, name: "liquidity" });
-    }
-
-    const price = await checkPrice({
+    const result = await checkOrder({
       assetType: b.assetType,
+      side: b.side,
+      tradeUsd: b.tradeUsd,
       ...(b.symbol !== undefined ? { symbol: b.symbol } : {}),
       ...(b.tokenAddress !== undefined ? { tokenAddress: b.tokenAddress } : {}),
+      ...(b.portfolioValueUsd !== undefined ? { portfolioValueUsd: b.portfolioValueUsd } : {}),
+      ...(b.chain !== undefined ? { chain: b.chain } : {}),
+      ...(b.leverage !== undefined ? { leverage: b.leverage } : {}),
     });
-    checks.push({ ...price, name: "price" });
-
-    if (b.portfolioValueUsd !== undefined) {
-      const pos = checkPosition(
-        {
-          symbol: b.symbol ?? b.tokenAddress ?? "unknown",
-          side: b.side,
-          tradeUsd: b.tradeUsd,
-          assetType: b.assetType,
-          ...(b.leverage !== undefined ? { leverage: b.leverage } : {}),
-        },
-        { totalValueUsd: b.portfolioValueUsd, cashUsd: b.portfolioValueUsd }
-      );
-      checks.push({ ...pos, name: "position" });
-    }
-
-    const rank: Record<Verdict, number> = { PASS: 0, FLAG: 1, BLOCK: 2 };
-    let verdict: Verdict = "PASS";
-    let overallScore = 0;
-    let blockedBy: string | null = null;
-    for (const ch of checks) {
-      if (rank[ch.verdict] > rank[verdict]) verdict = ch.verdict;
-      if (ch.score > overallScore) overallScore = ch.score;
-      if (ch.verdict === "BLOCK" && blockedBy === null) blockedBy = ch.name;
-    }
-
-    return c.json({
-      verdict,
-      overallScore,
-      checks,
-      blockedBy,
-      latencyMs: Date.now() - start,
-    });
+    return c.json(result);
   }
 );
 

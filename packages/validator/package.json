@@ -1,6 +1,7 @@
 {
   "name": "@agentoolbox/validator",
   "version": "0.1.0",
+  "private": true,
   "description": "Validates imports/packages in AI-generated code against live registries",
   "homepage": "https://agent-toolbox.ai",
   "type": "module",

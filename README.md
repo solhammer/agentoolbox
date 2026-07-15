@@ -54,6 +54,7 @@ curl -X POST https://api.agent-toolbox.ai/v1/verify \
 | `POST /v1/scan/injection` | Detect prompt injection in user input | 1 | <10ms |
 | `POST /v1/tokens/count` | Count tokens + estimate cost before LLM call | 1 | <10ms |
 | `POST /v1/scan/vulnerabilities` | Check packages against OSV/CVE database | 2 | <500ms |
+| `POST /v1/scan/pii` | Detect & redact PII/PHI/PCI before egress | 1 | <20ms |
 
 **1 SOL = 10,000 credits** · Free tier: 10 calls/IP
 
@@ -597,13 +598,25 @@ git clone https://github.com/solhammer/agentoolbox
 cd agentoolbox && pnpm install && pnpm --filter @agentoolbox/mcp build
 ```
 
-**MCP tools available:**
+**MCP tools available (all 15 endpoints):**
 
 | Tool | Description |
 |---|---|
 | `validate_imports` | Check every import in AI-generated code against live registries |
 | `verify_output` | Full hallucination firewall on any LLM response |
-| `distill_context` | Compress conversation history to a token budget |
+| `distill_context` | Compress conversation history to a token budget (TF-IDF) |
+| `scan_secrets` | Detect hardcoded credentials (redacted) |
+| `scan_injection` | Detect prompt injection in untrusted input |
+| `count_tokens` | Token count + cost estimate for text or messages |
+| `scan_vulnerabilities` | Check packages against the OSV/CVE database |
+| `scan_pii` | Detect & redact PII/PHI/PCI before egress |
+| `finance_units` | Validate raw vs UI token amount (decimal safety) |
+| `finance_price` | Cross-source price validation |
+| `finance_symbol` | Resolve ticker/token identity |
+| `finance_token_risk` | Rug-pull / mint & freeze authority scan |
+| `finance_slippage` | Pool depth / price-impact estimate |
+| `finance_order_risk` | Composite pre-trade gate |
+| `finance_position_check` | Deterministic position limits + kill-switch |
 
 ---
 

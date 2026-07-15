@@ -13,9 +13,11 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@agentoolbox/core": "workspace:*",
     "@agentoolbox/finance": "workspace:*",
     "@agentoolbox/firewall": "workspace:*",
     "@agentoolbox/payments": "workspace:*",
+    "@agentoolbox/privacy": "workspace:*",
     "@agentoolbox/validator": "workspace:*",
     "hono": "^4.5.0",
     "ioredis": "^5.4.0",

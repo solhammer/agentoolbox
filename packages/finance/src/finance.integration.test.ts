@@ -31,7 +31,7 @@ async function call(path: string, body?: unknown) {
   const res = await fetch(`${BASE}${path}`, {
     method: body ? "POST" : "GET",
     headers: { "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ? JSON.stringify(body) : null,
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);

@@ -15,4 +15,14 @@ export type {
   ClaimVerdict,
 } from "./types.js";
 
+export type {
+  PiiCategory,
+  PiiSeverity,
+  PiiEnforcementMode,
+  PiiEntity,
+  PiiPolicy,
+  PiiScanInput,
+  PiiScanResult,
+} from "./types.js";
+
 export { AgentoolboxClient } from "./client.js";

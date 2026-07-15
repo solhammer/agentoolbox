@@ -1,6 +1,7 @@
 {
   "name": "@agentoolbox/payments",
   "version": "0.1.0",
+  "private": true,
   "description": "Solana on-chain payment verification for agent-toolbox.ai",
   "type": "module",
   "main": "./dist/index.js",

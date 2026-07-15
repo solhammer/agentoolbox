@@ -1,109 +1,400 @@
 ---
 const githubUrl = 'https://github.com/solhammer/agentoolbox';
+
+// ── Icon set (rendered via set:html in cards and modals) ──────────────────────
+const svg = (inner: string) =>
+  `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+const icons: Record<string, string> = {
+  'shield-check': svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" />'),
+  'fire-shield': svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M12 7c1 1.5 1.5 2.5 1.5 3.5A1.5 1.5 0 0 1 12 12a1.5 1.5 0 0 1-1.5-1.5C10.5 9.5 11 8.5 12 7z" />'),
+  'compress': svg('<polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /><line x1="14" y1="10" x2="21" y2="3" /><line x1="3" y1="21" x2="10" y2="14" />'),
+  'key': svg('<circle cx="7.5" cy="15.5" r="5.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" />'),
+  'shield-x': svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9.5 9.5 5 5" /><path d="m14.5 9.5-5 5" />'),
+  'hash': svg('<line x1="4" y1="9" x2="20" y2="9" /><line x1="4" y1="15" x2="20" y2="15" /><line x1="10" y1="3" x2="8" y2="21" /><line x1="16" y1="3" x2="14" y2="21" />'),
+  'bug': svg('<path d="m8 2 1.88 1.88" /><path d="M14.12 3.88 16 2" /><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1" /><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6z" /><path d="M12 20v-9" /><path d="M6.53 9C4.6 8.8 3 7.1 3 5" /><path d="M6 13H2" /><path d="M3 21c0-2.1 1.7-3.9 3.8-4" /><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4" /><path d="M22 13h-4" /><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4" />'),
+  'lock': svg('<rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />'),
+  'calculator': svg('<rect width="16" height="20" x="4" y="2" rx="2" /><line x1="8" x2="16" y1="6" y2="6" /><line x1="8" x2="8" y1="14" y2="14" /><line x1="12" x2="12" y1="14" y2="14" /><line x1="16" x2="16" y1="14" y2="14" /><line x1="8" x2="8" y1="18" y2="18" /><line x1="12" x2="12" y1="18" y2="18" /><line x1="16" x2="16" y1="18" y2="18" />'),
+  'trending-up': svg('<polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" />'),
+  'search': svg('<circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />'),
+  'triangle-alert': svg('<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" />'),
+  'coins': svg('<circle cx="8" cy="8" r="6" /><path d="M18.09 10.37A6 6 0 1 1 10.34 18" /><path d="M7 6h1v4" /><path d="m16.71 13.88.7.71-2.82 2.82" />'),
+  'chart-line': svg('<path d="M3 3v18h18" /><path d="m19 9-5 5-4-4-3 3" />'),
+  'shield-dollar': svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M12 8v8" /><path d="M14.5 10.5a2 2 0 0 0-2-1.5h-1a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3h-1a2 2 0 0 1-2-1.5" />'),
+};
+
 const features = [
   {
+    slug: 'validate-imports',
+    suite: 'core',
     title: 'Package Validator',
     body: "19.7% of AI-generated imports don't exist. We check every one against PyPI, npm, crates.io, and Go — in under 200ms.",
     endpoint: 'POST /v1/validate/imports',
     icon: 'shield-check',
+    credits: '1 credit · ~$0.015',
+    latency: '<200ms',
+    detail:
+      'Every import in AI-generated code is checked against the live package registry for its language, in parallel. Catches slopsquatting — hallucinated package names that do not exist (or worse, were registered by an attacker) before your agent runs pip or npm install.',
+    capabilities: [
+      'Live registry checks: PyPI, npm, crates.io, Go',
+      'Parallel lookups, typically under 200ms',
+      'Classifies each import valid / hallucinated / unknown',
+      'Returns a hallucination rate for the whole snippet',
+    ],
+    useCases: [
+      'Gate AI-generated code before install or execution',
+      'Coding agents and autonomous dev pipelines',
+      'PR bots reviewing generated dependencies',
+    ],
   },
   {
+    slug: 'verify',
+    suite: 'core',
     title: 'Hallucination Firewall',
     body: 'Returns PASS, FLAG, or BLOCK for any LLM output. Catches bad packages, dead URLs, malformed citations, and numeric contradictions. Every verdict is SHA-256 certified.',
     endpoint: 'POST /v1/verify',
     icon: 'fire-shield',
+    credits: '2 credits · ~$0.030',
+    latency: '<500ms',
+    detail:
+      'The hallucination firewall runs every applicable check in parallel and returns a single PASS/FLAG/BLOCK verdict with a tamper-evident certificate. For code it validates packages; for prose it checks URLs, DOI/arXiv citations, numeric contradictions, and can ground claims against supplied source docs.',
+    capabilities: [
+      'Package, URL, DOI/arXiv, and numeric-contradiction checks',
+      'Optional NLI grounding against supplied source texts',
+      'PASS / FLAG / BLOCK with per-claim evidence',
+      'SHA-256 certificate for audit',
+    ],
+    useCases: [
+      'Final gate before accepting any LLM output',
+      'RAG answers grounded in documents',
+      'Research and report generation',
+    ],
   },
   {
+    slug: 'distill',
+    suite: 'core',
     title: 'Context Distiller',
     body: 'Trim bloated agent context windows to a token budget. Keep the system prompt, deduplicate, and slice from newest to oldest. Up to 80% compression.',
     endpoint: 'POST /v1/distill',
     icon: 'compress',
+    credits: '1 credit · ~$0.015',
+    latency: '<50ms',
+    detail:
+      'Compresses a bloated conversation to a token budget using TF-IDF importance scoring. Always keeps the system prompt and the most recent turns, then fills the remaining budget with the highest-signal messages — up to about 80% smaller.',
+    capabilities: [
+      'TF-IDF importance scoring',
+      'Preserves system prompt and recency',
+      'Deterministic, under 50ms',
+      'Optional LLMLingua-2 backend',
+    ],
+    useCases: [
+      'Long-running agents hitting context limits',
+      'Cutting token spend on repeated loops',
+      'Summarizing history before a model call',
+    ],
   },
 ];
 
 const securityTools = [
   {
+    slug: 'scan-secrets',
+    suite: 'security',
     title: 'Secret Scanner',
     body: 'Detects hardcoded API keys, passwords, private keys, and connection strings in AI-generated code before they reach git. 10 pattern detectors. Redacted output.',
     endpoint: 'POST /v1/scan/secrets',
     icon: 'key',
+    credits: '1 credit · ~$0.015',
+    latency: '<10ms',
+    detail:
+      'Detects hardcoded credentials in AI-generated code before they reach git or production. Every match is redacted — only the type, severity, and line number are returned.',
+    capabilities: [
+      '10 detectors: AWS, GitHub, OpenAI, Anthropic, private keys, DB URLs, passwords, high-entropy strings',
+      'Severity: critical / high / medium',
+      'Redacted output with line numbers',
+      'Under 10ms, no network calls',
+    ],
+    useCases: [
+      'Pre-commit and pre-deploy scanning of generated code',
+      'Coding agents writing config files',
+      'CI secret gates',
+    ],
   },
   {
+    slug: 'scan-injection',
+    suite: 'security',
     title: 'Injection Detector',
     body: 'Identifies prompt injection attacks in user input — role hijacking, jailbreaks, data exfiltration attempts, and encoding tricks — before passing to an LLM.',
     endpoint: 'POST /v1/scan/injection',
     icon: 'shield-x',
+    credits: '1 credit · ~$0.015',
+    latency: '<10ms',
+    detail:
+      'Screens untrusted user input for prompt-injection before it reaches your LLM — instruction overrides, role hijacking, jailbreaks, data-exfiltration attempts, and encoding tricks — returning a risk band and the matched patterns.',
+    capabilities: [
+      '20+ weighted attack patterns',
+      'Risk bands: safe / suspicious / injection',
+      'Unicode direction-override and base64 trick detection',
+      'Under 10ms',
+    ],
+    useCases: [
+      'Chatbots and customer-support agents',
+      'Any app forwarding user text to an LLM',
+      'RAG over user-supplied content',
+    ],
   },
   {
+    slug: 'tokens-count',
+    suite: 'security',
     title: 'Token Counter',
     body: 'BPE-approximate token counting for GPT-4, Claude, and Gemini with per-model cost estimates. Know your spend before you call the LLM.',
     endpoint: 'POST /v1/tokens/count',
     icon: 'hash',
+    credits: '1 credit · ~$0.015',
+    latency: '<10ms',
+    detail:
+      'BPE-approximate token counting with per-model cost estimates. Know your spend and check context-window fit before you make the call.',
+    capabilities: [
+      'Text or chat-messages input',
+      'GPT-4, GPT-3.5, Claude, Gemini, generic',
+      'Per-message breakdown plus context-window remaining',
+      'USD cost estimate',
+    ],
+    useCases: [
+      'Budget and guard token spend',
+      'Decide when to distill',
+      'Cost dashboards and quotas',
+    ],
   },
   {
+    slug: 'scan-vulnerabilities',
+    suite: 'security',
     title: 'Vulnerability Scanner',
     body: 'Checks every package in AI-generated code against the OSV (Open Source Vulnerabilities) database. Surfaces CVEs and GHSAs before dependencies are installed.',
     endpoint: 'POST /v1/scan/vulnerabilities',
     icon: 'bug',
+    credits: '2 credits · ~$0.030',
+    latency: '<500ms',
+    detail:
+      'Checks package names against the OSV (Open Source Vulnerabilities) database and returns the CVEs and GHSAs affecting them — before dependencies are installed.',
+    capabilities: [
+      'OSV / CVE / GHSA lookup',
+      'PyPI, npm, crates.io, Go',
+      'Severity and aliases per finding',
+      'Batch queries',
+    ],
+    useCases: [
+      'Post-validation dependency safety',
+      'Supply-chain gates',
+      'Agent-written build and lock files',
+    ],
+  },
+  {
+    slug: 'scan-pii',
+    suite: 'security',
+    title: 'PII / PHI / PCI Firewall',
+    body: 'Detects and redacts SSNs, credit cards (Luhn), IBANs (ISO-7064), and health identifiers before an agent logs, sends, or persists them. Deterministic, checksum-validated, with a signed certificate.',
+    endpoint: 'POST /v1/scan/pii',
+    icon: 'lock',
+    credits: '1 credit · ~$0.015',
+    latency: '<20ms',
+    featured: true,
+    detail:
+      'The deterministic gate an agent calls before text crosses a trust boundary — a log line, a ticket, a third-party API, or a persisted transcript. It detects regulated personal data, redacts it, and returns a signed PASS/FLAG/BLOCK verdict. No network calls, nothing leaves the box, and raw values are never echoed back.',
+    capabilities: [
+      'Checksum-validated: credit cards (Luhn), IBANs (ISO-7064 mod-97), UK NHS (mod-11), Canadian SIN (Luhn)',
+      'Structural: US SSN (SSA rules), email, phone, IPv4 — with overlap resolution',
+      'PII / PHI / PCI categories and severity scoring',
+      'Format-preserving masking plus a fully redacted copy of the input',
+      'Enforcement modes: block / flag / audit',
+      'Policy: severity threshold, allowTypes, jurisdictions, redact on/off',
+      'Tamper-evident SHA-256 certificate bound to the input hash',
+    ],
+    useCases: [
+      'Support agents: strip SSNs and cards before writing tickets or transcripts',
+      'Healthcare and telehealth copilots: keep PHI out of prompts and non-BAA vendors',
+      'Fintech and PCI: block raw card numbers from leaving the boundary',
+      'HR and recruiting agents: guard employee records and offer letters',
+      'GDPR / HIPAA / CCPA: a pre-flight gate plus an audit certificate for every egress',
+    ],
   },
 ];
 
 const financeTools = [
   {
+    slug: 'finance-units',
+    suite: 'finance',
     title: 'Units Sanity Check',
     body: 'Prevents the $440k Lobstar-class decimal error. Validates raw on-chain amounts against authoritative token decimals from DexScreener and Solana RPC.',
     endpoint: 'POST /v1/finance/units',
     icon: 'calculator',
+    credits: '1 credit · ~$0.015',
+    latency: '<10ms',
+    detail:
+      'Validates a raw on-chain amount against the intended UI amount using the token authoritative decimals. Catches the catastrophic decimal-scaling error — sending 1000x too many tokens.',
+    capabilities: [
+      'Authoritative decimals from DexScreener and Solana RPC',
+      'Blocks over 1% deviation',
+      'Works across Solana and EVM chains',
+      'Under 10ms once decimals are known',
+    ],
+    useCases: [
+      'Any agent building a transfer transaction',
+      'Treasury and payout bots',
+      'The Lobstar $440k check',
+    ],
   },
   {
+    slug: 'finance-price',
+    suite: 'finance',
     title: 'Cross-Source Price Validator',
     body: 'Fetches the same asset from two independent live sources (CoinGecko + DexScreener for crypto). Blocks if they diverge >2% or if data is stale.',
     endpoint: 'POST /v1/finance/price',
     icon: 'trending-up',
+    credits: '2 credits · ~$0.030',
+    latency: '~300ms',
+    detail:
+      'Cross-validates an asset price against two independent live sources and blocks stale or divergent data. Flags a proposed price that deviates from consensus.',
+    capabilities: [
+      'CoinGecko + DexScreener (crypto), yahoo-finance2 (stocks)',
+      'Staleness and divergence checks',
+      'Consensus price plus per-source breakdown',
+      'Proposed-price deviation flag',
+    ],
+    useCases: [
+      'Pre-trade price sanity',
+      'Guard against hallucinated prices',
+      'Portfolio valuation',
+    ],
   },
   {
+    slug: 'finance-symbol',
+    suite: 'finance',
     title: 'Symbol / Token Resolver',
     body: 'Resolves tickers and token addresses to confirmed identities. Flags ambiguous symbols — USDC has 200+ imposters on Solana alone.',
     endpoint: 'POST /v1/finance/symbol',
     icon: 'search',
+    credits: '1 credit · ~$0.015',
+    latency: '~200ms',
+    detail:
+      'Resolves a ticker or token to a confirmed identity and flags ambiguity — because symbols collide. USDC has 200+ imposters on Solana. Always resolve by address for crypto.',
+    capabilities: [
+      'Address and symbol resolution',
+      'Liquidity-ranked matches',
+      'Ambiguity detection',
+      'Expected-name confirmation',
+    ],
+    useCases: [
+      'Confirm the right token before trading',
+      'Avoid imposter tokens',
+      'Symbol to address mapping',
+    ],
   },
   {
+    slug: 'finance-token-risk',
+    suite: 'finance',
     title: 'Rug Pull Scanner',
     body: 'One call to RugCheck.xyz + on-chain authority verification. Blocks tokens with active mint authority, no LP lock, or rug score above threshold.',
     endpoint: 'POST /v1/finance/token/risk',
     icon: 'triangle-alert',
+    credits: '3 credits · ~$0.045',
+    latency: '~500ms',
+    detail:
+      'Rug-pull scanner: a RugCheck.xyz score plus on-chain mint and freeze authority verification. Blocks tokens with active mint authority, unlocked LP, or a rug score above threshold.',
+    capabilities: [
+      'RugCheck score plus on-chain authority checks',
+      'Mint and freeze authority flags',
+      'LP-lock check',
+      'Configurable thresholds',
+    ],
+    useCases: [
+      'Screen new or unknown tokens',
+      'Memecoin trading agents',
+      'Pre-buy safety gate',
+    ],
   },
   {
+    slug: 'finance-slippage',
+    suite: 'finance',
     title: 'Slippage / Liquidity Guard',
     body: 'Estimates price impact using DexScreener pool data. Prevents the thin-pool disaster where a $440k order realizes ~$40k due to pool drainage.',
     endpoint: 'POST /v1/finance/slippage',
     icon: 'coins',
+    credits: '2 credits · ~$0.030',
+    latency: '~200ms',
+    detail:
+      'Estimates price impact from live pool liquidity (constant-product AMM) so a large order does not drain a thin pool. Flags implausible volume-to-liquidity ratios that suggest wash trading.',
+    capabilities: [
+      'Price-impact estimate from pool depth',
+      'Configurable max impact and min liquidity',
+      'Wash-trading flag',
+      'DexScreener pool data',
+    ],
+    useCases: [
+      'Size trades to available liquidity',
+      'Avoid thin-pool disasters',
+      'Pre-trade impact preview',
+    ],
   },
   {
+    slug: 'finance-order-risk',
+    suite: 'finance',
     title: 'Full Order Risk Scorer',
     body: 'Pre-trade gate that runs all finance checks in parallel. Returns a composite PASS/FLAG/BLOCK with per-check breakdown and blockedBy field.',
     endpoint: 'POST /v1/finance/order/risk',
     icon: 'chart-line',
+    credits: '5 credits · ~$0.075',
+    latency: '~500ms',
+    detail:
+      'The full pre-trade gate: runs token risk, slippage, price validation, and position limits in parallel and returns a composite verdict with the specific check that blocked it.',
+    capabilities: [
+      'Runs all applicable finance checks at once',
+      'Composite PASS/FLAG/BLOCK plus blockedBy',
+      'Per-check score breakdown',
+      'One call',
+    ],
+    useCases: [
+      'Single-call pre-trade gate',
+      'Trading agents',
+      'propose then validate then execute',
+    ],
   },
   {
+    slug: 'finance-position',
+    suite: 'finance',
     title: 'Position Guardian',
     body: 'Deterministic kill-switch. No API calls — pure arithmetic. Enforces max position size, daily loss limits, leverage caps, and asset allowlists.',
     endpoint: 'POST /v1/finance/position/check',
     icon: 'shield-dollar',
+    credits: '1 credit · ~$0.015',
+    latency: '<1ms',
+    detail:
+      'Deterministic position-limit and kill-switch gate — no external calls, pure arithmetic. The final, non-overridable gate before executing a trade.',
+    capabilities: [
+      'Max position %, daily-loss, leverage, open positions',
+      'Asset allowlist plus a hard USD cap',
+      'Kill-switch',
+      'Under 1ms, no network',
+    ],
+    useCases: [
+      'Non-overridable safety gate',
+      'Risk limits for autonomous traders',
+      'The Claude Code sweep fix',
+    ],
   },
 ];
 
+const allTools = [...features, ...securityTools, ...financeTools];
+
 const stats = [
   { value: '19.7%', label: 'of AI-generated packages are hallucinated', source: 'USENIX 2025' },
-  { value: '68%', label: 'of multi-agent pipelines contain hallucinations', source: 'IBM 2026' },
-  { value: '\$440k', label: 'lost by one agent from a single decimal error', source: 'Lobstar 2026' },
+  { value: '\u20ac20M', label: 'max GDPR fine for a single data breach', source: 'GDPR Art. 83' },
+  { value: '\\$440k', label: 'lost by one agent from a single decimal error', source: 'Lobstar 2026' },
 ];
 
-const curlExample = `curl -X POST https://agent-toolbox.ai/v1/validate/imports \\
-  -H "Content-Type: application/json" \\
+const curlExample = `curl -X POST https://agent-toolbox.ai/v1/validate/imports \\\\
+  -H "Content-Type: application/json" \\\\
   -d '{
     "language": "python",
-    "code": "import numpy\\nfrom superlogger import magic_log\\nimport pandas"
+    "code": "import numpy\\\\nfrom superlogger import magic_log\\\\nimport pandas"
   }'`;
 
 const jsonResponse = `{
@@ -121,6 +412,20 @@ const jsonResponse = `{
   "latencyMs": 142
 }`;
 
+const piiCurl = `curl -X POST https://agent-toolbox.ai/v1/scan/pii \\\\
+  -H "Content-Type: application/json" \\\\
+  -d '{
+    "text": "Patient SSN 219-09-9999, card 4111 1111 1111 1111"
+  }'`;
+
+const piiResponse = `{
+  "verdict": "BLOCK",
+  "categories": ["PII", "PCI"],
+  "totalFindings": 2,
+  "redactedText": "Patient SSN [REDACTED_US_SSN], card [REDACTED_CREDIT_CARD]",
+  "certificate": "sha256:5f691771..."
+}`;
+
 const mcpConfig = `{
   "mcpServers": {
     "agentoolbox": {
@@ -130,7 +435,12 @@ const mcpConfig = `{
   }
 }`;
 
-const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
+const mcpTools = [
+  'validate_imports', 'verify_output', 'distill_context',
+  'scan_secrets', 'scan_injection', 'count_tokens', 'scan_vulnerabilities', 'scan_pii',
+  'finance_units', 'finance_price', 'finance_symbol', 'finance_token_risk',
+  'finance_slippage', 'finance_order_risk', 'finance_position_check',
+];
 ---
 
 <!doctype html>
@@ -140,7 +450,7 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="The quality layer every AI agent needs. Catch hallucinated packages, block bad outputs, and cut token waste before your agent breaks production."
+      content="The quality layer every AI agent needs. Catch hallucinated packages, block bad outputs, redact PII/PHI/PCI before egress, and guard trades — 15 agent-callable APIs, pay per call in SOL."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -149,24 +459,49 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
       rel="stylesheet"
     />
     <title>agent-toolbox.ai — The quality layer every AI agent needs</title>
+    <style is:global>
+      dialog.atb-modal {
+        margin: auto;
+        border: none;
+        background: transparent;
+        padding: 0;
+        max-height: 90vh;
+        color: white;
+      }
+      dialog.atb-modal::backdrop {
+        background: rgba(1, 4, 9, 0.72);
+        backdrop-filter: blur(3px);
+      }
+      dialog.atb-modal[open] {
+        animation: atb-pop 0.16s ease-out;
+      }
+      @keyframes atb-pop {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    </style>
   </head>
   <body class="bg-surface text-white antialiased" style="font-family: 'Inter', system-ui, sans-serif;">
     <!-- NAV -->
-    <header class="sticky top-0 z-50 border-b border-surface-border bg-surface/80 backdrop-blur">
+    <header class="sticky top-0 z-40 border-b border-surface-border bg-surface/80 backdrop-blur">
       <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <a href="#top" class="flex items-center gap-2 font-mono text-lg font-semibold tracking-tight">
           <span class="inline-block h-2.5 w-2.5 rounded-full bg-brand"></span>
           <span>agent-toolbox<span class="text-brand">.ai</span></span>
         </a>
-        <a
-          href={githubUrl}
-          class="inline-flex items-center gap-2 rounded-md border border-surface-border px-3 py-1.5 text-sm font-medium text-[#8b949e] transition hover:border-brand hover:text-white"
-        >
-          <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true">
-            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-          </svg>
-          GitHub
-        </a>
+        <div class="flex items-center gap-3">
+          <a href="#privacy-firewall" class="hidden text-sm font-medium text-[#8b949e] transition hover:text-white sm:inline">PII Firewall</a>
+          <a href="#pricing" class="hidden text-sm font-medium text-[#8b949e] transition hover:text-white sm:inline">Pricing</a>
+          <a
+            href={githubUrl}
+            class="inline-flex items-center gap-2 rounded-md border border-surface-border px-3 py-1.5 text-sm font-medium text-[#8b949e] transition hover:border-brand hover:text-white"
+          >
+            <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+            </svg>
+            GitHub
+          </a>
+        </div>
       </nav>
     </header>
 
@@ -189,15 +524,15 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
             AI agent needs
           </h1>
           <p class="mx-auto mt-6 max-w-2xl text-lg text-[#8b949e] sm:text-xl">
-            Catch hallucinations. Block injections. Scan secrets. Guard trades.
-            <span class="text-white">14 tools. One platform. Pay per call in SOL.</span>
+            Catch hallucinations. Block injections. Redact PII. Guard trades.
+            <span class="text-white">15 tools. One platform. Pay per call in SOL.</span>
           </p>
           <div class="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <a
-              href="#code"
+              href="#privacy-firewall"
               class="inline-flex w-full items-center justify-center rounded-lg bg-brand px-6 py-3 font-semibold text-surface transition hover:bg-brand-dark sm:w-auto"
             >
-              Read the docs
+              Meet the PII Firewall
             </a>
             <a
               href={githubUrl}
@@ -237,102 +572,103 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
         </div>
       </section>
 
+      <!-- FEATURED: PII FIREWALL -->
+      <section id="privacy-firewall" class="mx-auto max-w-6xl px-6 py-10">
+        <div class="relative overflow-hidden rounded-2xl border border-brand/40 bg-surface-card p-8 sm:p-10">
+          <div class="pointer-events-none absolute inset-0 opacity-60" style="background: radial-gradient(500px circle at 100% 0%, rgba(0,212,170,0.12), transparent 60%);"></div>
+          <div class="relative grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
+            <div>
+              <span class="inline-flex items-center gap-2 rounded-full border border-brand/40 bg-brand/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand">
+                <span class="h-1.5 w-1.5 rounded-full bg-brand"></span> New · Privacy
+              </span>
+              <h2 class="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">
+                Stop your agent from leaking regulated data
+              </h2>
+              <p class="mt-4 text-[#8b949e]">
+                Agents write logs, file tickets, call third-party APIs, and store transcripts — and any of those can leak a customer's SSN, a card number, or a medical record. <span class="text-white">One unguarded egress is a reportable breach.</span> The PII / PHI / PCI Firewall is the deterministic gate your agent calls <span class="text-white">before</span> text crosses the boundary.
+              </p>
+              <ul class="mt-6 space-y-2 text-sm text-[#8b949e]">
+                <li class="flex gap-2"><span class="text-brand">✓</span> Checksum-validated: cards (Luhn), IBANs (ISO-7064), UK NHS (mod-11), SIN — plus SSN, email, phone, IP</li>
+                <li class="flex gap-2"><span class="text-brand">✓</span> PASS / FLAG / BLOCK, a redacted copy of the text, and a signed SHA-256 certificate</li>
+                <li class="flex gap-2"><span class="text-brand">✓</span> block / flag / audit modes · jurisdiction &amp; type policy · nothing stored, raw values never returned · &lt;20ms</li>
+              </ul>
+              <div class="mt-7 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  data-modal="scan-pii"
+                  class="inline-flex items-center justify-center rounded-lg bg-brand px-5 py-2.5 font-semibold text-surface transition hover:bg-brand-dark"
+                >
+                  Explore capabilities &amp; use cases →
+                </button>
+                <a
+                  href="#pricing"
+                  class="inline-flex items-center justify-center rounded-lg border border-surface-border bg-surface px-5 py-2.5 font-semibold text-white transition hover:border-brand"
+                >
+                  Start free
+                </a>
+              </div>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-surface-border bg-[#0a0d12]">
+              <div class="flex items-center justify-between border-b border-surface-border px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <span class="h-3 w-3 rounded-full bg-[#ff5f56]"></span>
+                  <span class="h-3 w-3 rounded-full bg-[#ffbd2e]"></span>
+                  <span class="h-3 w-3 rounded-full bg-[#27c93f]"></span>
+                  <span class="ml-2 font-mono text-xs text-[#6e7681]">scan-pii.sh</span>
+                </div>
+                <span class="rounded bg-red-500/15 px-2 py-0.5 font-mono text-xs font-semibold text-red-400">BLOCK</span>
+              </div>
+              <pre class="overflow-x-auto p-5 font-mono text-xs leading-relaxed text-[#3fb950]"><code>{piiCurl}</code></pre>
+              <div class="border-t border-surface-border"></div>
+              <pre class="overflow-x-auto p-5 font-mono text-xs leading-relaxed text-[#8b949e]"><code>{piiResponse}</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- FEATURES -->
       <section class="mx-auto max-w-6xl px-6 py-16">
-        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">14 tools. Two suites. One platform.</h2>
+        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">15 tools. Three suites. One platform.</h2>
         <p class="mx-auto mt-3 max-w-2xl text-center text-[#8b949e]">
           Composable, agent-callable APIs that verify and improve LLM outputs before they cause damage.
+          <span class="text-white">Click any tool for capabilities and use cases.</span>
         </p>
         <p class="mt-2 text-center text-xs font-semibold uppercase tracking-wider text-brand">Core quality checks</p>
         <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
           {
-            features.map((feature) => (
-              <div class="group relative overflow-hidden rounded-xl border border-surface-border bg-surface-card p-6 transition hover:border-brand/50">
+            features.map((t) => (
+              <button type="button" data-modal={t.slug} class="group relative block w-full overflow-hidden rounded-xl border border-surface-border bg-surface-card p-6 text-left transition hover:border-brand/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">
                 <div class="absolute inset-x-0 top-0 h-1 bg-brand"></div>
-                <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-brand/10 text-brand">
-                  {feature.icon === 'shield-check' && (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                      <path d="m9 12 2 2 4-4" />
-                    </svg>
-                  )}
-                  {feature.icon === 'fire-shield' && (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                      <path d="M12 7c1 1.5 1.5 2.5 1.5 3.5A1.5 1.5 0 0 1 12 12a1.5 1.5 0 0 1-1.5-1.5C10.5 9.5 11 8.5 12 7z" />
-                    </svg>
-                  )}
-                  {feature.icon === 'compress' && (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <polyline points="4 14 10 14 10 20" />
-                      <polyline points="20 10 14 10 14 4" />
-                      <line x1="14" y1="10" x2="21" y2="3" />
-                      <line x1="3" y1="21" x2="10" y2="14" />
-                    </svg>
-                  )}
+                <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-brand/10 text-brand" set:html={icons[t.icon]} />
+                <h3 class="mt-5 text-lg font-semibold">{t.title}</h3>
+                <p class="mt-2 text-sm leading-relaxed text-[#8b949e]">{t.body}</p>
+                <div class="mt-5 flex items-center justify-between">
+                  <span class="inline-block rounded-md border border-surface-border bg-surface px-3 py-1.5 font-mono text-xs text-brand">{t.endpoint}</span>
+                  <span class="text-xs font-medium text-brand opacity-0 transition group-hover:opacity-100">More →</span>
                 </div>
-                <h3 class="mt-5 text-lg font-semibold">{feature.title}</h3>
-                <p class="mt-2 text-sm leading-relaxed text-[#8b949e]">{feature.body}</p>
-                <span class="mt-5 inline-block rounded-md border border-surface-border bg-surface px-3 py-1.5 font-mono text-xs text-brand">
-                  {feature.endpoint}
-                </span>
-              </div>
+              </button>
             ))
           }
         </div>
 
-        <!-- Security & Analysis tools -->
-        <p class="mt-14 text-center text-xs font-semibold uppercase tracking-wider text-brand">Security &amp; analysis</p>
+        <!-- Security, privacy & analysis tools -->
+        <p class="mt-14 text-center text-xs font-semibold uppercase tracking-wider text-brand">Security, privacy &amp; analysis</p>
         <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {
-            securityTools.map((tool) => (
-              <div class="group relative overflow-hidden rounded-xl border border-surface-border bg-surface-card p-6 transition hover:border-brand/50">
+            securityTools.map((t) => (
+              <button type="button" data-modal={t.slug} class:list={["group relative block w-full overflow-hidden rounded-xl border bg-surface-card p-6 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand", t.featured ? "border-brand/50 ring-1 ring-brand/30" : "border-surface-border hover:border-brand/50"]}>
                 <div class="absolute inset-x-0 top-0 h-1 bg-brand/50"></div>
-                <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-brand/10 text-brand">
-                  {tool.icon === 'key' && (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <circle cx="7.5" cy="15.5" r="5.5" />
-                      <path d="m21 2-9.6 9.6" />
-                      <path d="m15.5 7.5 3 3L22 7l-3-3" />
-                    </svg>
-                  )}
-                  {tool.icon === 'shield-x' && (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                      <path d="m9.5 9.5 5 5" />
-                      <path d="m14.5 9.5-5 5" />
-                    </svg>
-                  )}
-                  {tool.icon === 'hash' && (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <line x1="4" y1="9" x2="20" y2="9" />
-                      <line x1="4" y1="15" x2="20" y2="15" />
-                      <line x1="10" y1="3" x2="8" y2="21" />
-                      <line x1="16" y1="3" x2="14" y2="21" />
-                    </svg>
-                  )}
-                  {tool.icon === 'bug' && (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="m8 2 1.88 1.88" />
-                      <path d="M14.12 3.88 16 2" />
-                      <path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1" />
-                      <path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6z" />
-                      <path d="M12 20v-9" />
-                      <path d="M6.53 9C4.6 8.8 3 7.1 3 5" />
-                      <path d="M6 13H2" />
-                      <path d="M3 21c0-2.1 1.7-3.9 3.8-4" />
-                      <path d="M20.97 5c0 2.1-1.6 3.8-3.5 4" />
-                      <path d="M22 13h-4" />
-                      <path d="M17.2 17c2.1.1 3.8 1.9 3.8 4" />
-                    </svg>
-                  )}
+                {t.featured && (
+                  <span class="absolute right-3 top-3 rounded-full bg-brand/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand">New</span>
+                )}
+                <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-brand/10 text-brand" set:html={icons[t.icon]} />
+                <h3 class="mt-5 text-base font-semibold">{t.title}</h3>
+                <p class="mt-2 text-sm leading-relaxed text-[#8b949e]">{t.body}</p>
+                <div class="mt-5 flex items-center justify-between">
+                  <span class="inline-block rounded-md border border-surface-border bg-surface px-3 py-1.5 font-mono text-xs text-brand">{t.endpoint}</span>
+                  <span class="text-xs font-medium text-brand opacity-0 transition group-hover:opacity-100">More →</span>
                 </div>
-                <h3 class="mt-5 text-base font-semibold">{tool.title}</h3>
-                <p class="mt-2 text-sm leading-relaxed text-[#8b949e]">{tool.body}</p>
-                <span class="mt-5 inline-block rounded-md border border-surface-border bg-surface px-3 py-1.5 font-mono text-xs text-brand">
-                  {tool.endpoint}
-                </span>
-              </div>
+              </button>
             ))
           }
         </div>
@@ -342,29 +678,17 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
         <p class="mt-1 text-center text-xs text-[#6e7681]">Backed by real incidents: Lobstar $440k decimal error &middot; Claude Code $1,446 unauthorized sweep</p>
         <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {
-            financeTools.slice(0, 4).map((tool) => (
-              <div class="group relative overflow-hidden rounded-xl border border-[#9e6a03]/30 bg-surface-card p-5 transition hover:border-[#d29922]/50">
+            financeTools.map((t) => (
+              <button type="button" data-modal={t.slug} class="group relative block w-full overflow-hidden rounded-xl border border-[#9e6a03]/30 bg-surface-card p-5 text-left transition hover:border-[#d29922]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d29922]">
                 <div class="absolute inset-x-0 top-0 h-1 bg-[#d29922]/50"></div>
-                <h3 class="mt-2 text-sm font-semibold">{tool.title}</h3>
-                <p class="mt-1.5 text-xs leading-relaxed text-[#8b949e]">{tool.body}</p>
-                <span class="mt-4 inline-block rounded-md border border-[#9e6a03]/30 bg-surface px-2 py-1 font-mono text-[10px] text-[#d29922]">
-                  {tool.endpoint}
-                </span>
-              </div>
-            ))
-          }
-        </div>
-        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {
-            financeTools.slice(4).map((tool) => (
-              <div class="group relative overflow-hidden rounded-xl border border-[#9e6a03]/30 bg-surface-card p-5 transition hover:border-[#d29922]/50">
-                <div class="absolute inset-x-0 top-0 h-1 bg-[#d29922]/50"></div>
-                <h3 class="mt-2 text-sm font-semibold">{tool.title}</h3>
-                <p class="mt-1.5 text-xs leading-relaxed text-[#8b949e]">{tool.body}</p>
-                <span class="mt-4 inline-block rounded-md border border-[#9e6a03]/30 bg-surface px-2 py-1 font-mono text-[10px] text-[#d29922]">
-                  {tool.endpoint}
-                </span>
-              </div>
+                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#d29922]/10 text-[#d29922]" set:html={icons[t.icon]} />
+                <h3 class="mt-3 text-sm font-semibold">{t.title}</h3>
+                <p class="mt-1.5 text-xs leading-relaxed text-[#8b949e]">{t.body}</p>
+                <div class="mt-4 flex items-center justify-between">
+                  <span class="inline-block rounded-md border border-[#9e6a03]/30 bg-surface px-2 py-1 font-mono text-[10px] text-[#d29922]">{t.endpoint}</span>
+                  <span class="text-[10px] font-medium text-[#d29922] opacity-0 transition group-hover:opacity-100">More →</span>
+                </div>
+              </button>
             ))
           }
         </div>
@@ -419,12 +743,12 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
               Works with Claude, Warp, Cursor — any MCP client
             </h2>
             <p class="mt-4 text-[#8b949e]">
-              Drop agent-toolbox into your MCP config and your agent gets quality tools out of the box — validate, verify, and distill. No SDK, no glue code.
+              Drop agent-toolbox into your MCP config and your agent gets all 15 tools out of the box — import validation, the hallucination firewall, secret &amp; PII scanning, token counting, and the full finance protection suite. No SDK, no glue code.
             </p>
-            <div class="mt-6 flex flex-wrap gap-3">
+            <div class="mt-6 flex flex-wrap gap-2">
               {
                 mcpTools.map((tool) => (
-                  <span class="inline-flex items-center gap-2 rounded-md border border-surface-border bg-surface-card px-3 py-1.5 font-mono text-sm text-brand">
+                  <span class="inline-flex items-center gap-2 rounded-md border border-surface-border bg-surface-card px-3 py-1.5 font-mono text-xs text-brand">
                     <span class="h-1.5 w-1.5 rounded-full bg-brand"></span>
                     {tool}
                   </span>
@@ -459,7 +783,7 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
             <ul class="mt-6 space-y-3 text-sm text-[#8b949e]">
               <li class="flex items-center gap-2"><span class="text-brand">✓</span> 10 calls per IP</li>
               <li class="flex items-center gap-2"><span class="text-brand">✓</span> No auth needed</li>
-              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All 14 endpoints</li>
+              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All 15 endpoints</li>
             </ul>
             <a
               href="#code"
@@ -480,15 +804,19 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
             </div>
             <ul class="mt-6 space-y-3 text-sm">
               <li class="flex items-center justify-between border-b border-surface-border pb-2">
-                <span class="font-mono text-xs text-[#8b949e]">/v1/validate/imports</span>
+                <span class="font-mono text-xs text-[#8b949e]">/v1/scan/pii <span class="ml-1 rounded bg-brand/15 px-1 text-[9px] font-semibold uppercase text-brand">new</span></span>
                 <span class="font-mono text-xs text-brand">0.0001 SOL</span>
               </li>
               <li class="flex items-center justify-between border-b border-surface-border pb-2">
                 <span class="font-mono text-xs text-[#8b949e]">/v1/verify</span>
                 <span class="font-mono text-xs text-brand">0.0002 SOL</span>
               </li>
+              <li class="flex items-center justify-between border-b border-surface-border pb-2">
+                <span class="font-mono text-xs text-[#8b949e]">/v1/finance/order/risk</span>
+                <span class="font-mono text-xs text-brand">0.0005 SOL</span>
+              </li>
               <li class="flex items-center justify-between">
-                <span class="font-mono text-xs text-[#8b949e]">/v1/distill</span>
+                <span class="font-mono text-xs text-[#8b949e]">/v1/validate/imports</span>
                 <span class="font-mono text-xs text-brand">0.0001 SOL</span>
               </li>
             </ul>
@@ -533,5 +861,63 @@ const mcpTools = ['validate_imports', 'verify_output', 'distill_context'];
         <a href={githubUrl} class="transition hover:text-white">GitHub</a>
       </div>
     </footer>
+
+    <!-- TOOL DETAIL MODALS -->
+    {
+      allTools.map((t) => (
+        <dialog id={`modal-${t.slug}`} class="atb-modal w-[92vw] max-w-2xl">
+          <div class:list={["relative overflow-y-auto rounded-2xl border bg-surface-card p-6 sm:p-8", t.suite === 'finance' ? "border-[#9e6a03]/40" : "border-brand/40"]} style="max-height: 88vh;">
+            <button type="button" data-close aria-label="Close" class="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-md border border-surface-border text-[#8b949e] transition hover:border-brand hover:text-white">✕</button>
+            <div class="flex items-center gap-3 pr-10">
+              <span class:list={["flex h-11 w-11 shrink-0 items-center justify-center rounded-lg", t.suite === 'finance' ? "bg-[#d29922]/10 text-[#d29922]" : "bg-brand/10 text-brand"]} set:html={icons[t.icon]} />
+              <div>
+                <h3 class="text-xl font-bold">{t.title}</h3>
+                <span class:list={["font-mono text-xs", t.suite === 'finance' ? "text-[#d29922]" : "text-brand"]}>{t.endpoint}</span>
+              </div>
+            </div>
+            <p class="mt-4 text-sm leading-relaxed text-[#8b949e]">{t.detail}</p>
+            <div class="mt-6">
+              <p class:list={["text-xs font-semibold uppercase tracking-wider", t.suite === 'finance' ? "text-[#d29922]" : "text-brand"]}>Capabilities</p>
+              <ul class="mt-2 space-y-1.5 text-sm text-[#8b949e]">
+                {t.capabilities.map((c) => (
+                  <li class="flex gap-2"><span class={t.suite === 'finance' ? "text-[#d29922]" : "text-brand"}>•</span><span>{c}</span></li>
+                ))}
+              </ul>
+            </div>
+            <div class="mt-5">
+              <p class:list={["text-xs font-semibold uppercase tracking-wider", t.suite === 'finance' ? "text-[#d29922]" : "text-brand"]}>Use cases</p>
+              <ul class="mt-2 space-y-1.5 text-sm text-[#8b949e]">
+                {t.useCases.map((u) => (
+                  <li class="flex gap-2"><span class={t.suite === 'finance' ? "text-[#d29922]" : "text-brand"}>→</span><span>{u}</span></li>
+                ))}
+              </ul>
+            </div>
+            <div class="mt-6 flex flex-wrap items-center gap-3 border-t border-surface-border pt-4">
+              <span class="rounded-md border border-surface-border bg-surface px-2.5 py-1 font-mono text-xs text-[#8b949e]">{t.credits}</span>
+              <span class="rounded-md border border-surface-border bg-surface px-2.5 py-1 font-mono text-xs text-[#8b949e]">{t.latency}</span>
+              <a href="#pricing" data-close class:list={["ml-auto rounded-lg px-4 py-2 text-sm font-semibold transition", t.suite === 'finance' ? "bg-[#d29922] text-surface hover:opacity-90" : "bg-brand text-surface hover:bg-brand-dark"]}>Start free →</a>
+            </div>
+          </div>
+        </dialog>
+      ))
+    }
+
+    <script is:inline>
+      document.addEventListener('click', (e) => {
+        const opener = e.target.closest('[data-modal]');
+        if (opener) {
+          const dlg = document.getElementById('modal-' + opener.getAttribute('data-modal'));
+          if (dlg && typeof dlg.showModal === 'function') dlg.showModal();
+          return;
+        }
+        const closer = e.target.closest('[data-close]');
+        if (closer) {
+          const d = closer.closest('dialog');
+          if (d) d.close();
+          return;
+        }
+        if (e.target.tagName === 'DIALOG') e.target.close();
+      });
+    </script>
   </body>
 </html>

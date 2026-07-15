@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.solhammer/agent-toolbox",
+  "title": "Agent Toolbox",
+  "description": "Quality tools for AI agents: validate imports, hallucination firewall, and context distiller.",
+  "version": "0.1.0",
+  "websiteUrl": "https://agent-toolbox.ai",
+  "repository": {
+    "url": "https://github.com/solhammer/agentoolbox",
+    "source": "github",
+    "subfolder": "packages/mcp"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@agentoolbox/mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

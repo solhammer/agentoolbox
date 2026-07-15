@@ -3,6 +3,43 @@
 All notable changes to agent-toolbox.ai are documented here.
 
 
+## [1.3.0] — 2026-07-14 — Full MCP coverage + shared core
+
+### Added
+- MCP server now exposes all 15 endpoints (was 3): added `scan_secrets`, `scan_injection`, `count_tokens`, `scan_vulnerabilities`, `scan_pii`, and the seven `finance_*` tools. `distill_context` now uses the shared TF-IDF distiller.
+- New package `@agentoolbox/core` — shared secret/injection/vulnerability scanners, token counter, and context distiller (moved out of the API so the API and MCP share one implementation).
+- `@agentoolbox/finance` now exports `resolveSymbol()` and `checkOrder()` (extracted from the API routes) so the symbol and order-risk gates are reusable in-process.
+
+### Fixed
+- `@agentoolbox/finance` build failed under `exactOptionalPropertyTypes` (fetch `body: undefined` in the integration test).
+- MCP ESM bundle crashed at startup (`Dynamic require of "buffer"`) once Solana deps were bundled — added a `createRequire` banner to the tsup config.
+
+### Changed
+- The API imports the scanners/counter/distiller from `@agentoolbox/core`, and `finance-routes` delegates symbol/order to the finance library. No API response shapes changed.
+
+---
+
+
+## [1.2.0] — 2026-07-14 — Privacy Egress Firewall
+
+### Added — PII/PHI/PCI egress firewall (1 new endpoint)
+
+`POST /v1/scan/pii` — deterministic detection + redaction of regulated personal data before an agent logs it, sends it to a third party, or persists it. Returns PASS/FLAG/BLOCK, masked entities, a redacted copy of the input, and a SHA-256 certificate. Credits: 1.
+
+**New package: `@agentoolbox/privacy`**
+- `scanPii()` — the egress firewall (pure function, no network calls, no state)
+- Checksum-validated detectors: credit card (Luhn), IBAN (ISO 7064 mod-97), UK NHS (mod-11), Canadian SIN (Luhn), US SSN (SSA structural rules), plus email, phone, and IPv4
+- Policy controls: `mode` (block/flag/audit), `blockSeverityAtOrAbove`, `allowTypes`, `jurisdictions`, `redact`
+- Never returns raw values — masked previews + redacted text only
+
+**Also**
+- SDK: `client.scanPii()` + `Pii*` types
+- MCP: new `scan_pii` tool
+- Spec: `packages/privacy/SPEC.md`
+
+---
+
+
 ## [1.0.4] — 2026-07-14
 
 ### Changed

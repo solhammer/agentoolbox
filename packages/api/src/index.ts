@@ -92,6 +92,7 @@ app.get("/", (c) =>
       distill: "POST /v1/distill",
       scanSecrets: "POST /v1/scan/secrets",
       scanInjection: "POST /v1/scan/injection",
+      scanPii: "POST /v1/scan/pii",
       tokensCount: "POST /v1/tokens/count",
       scanVulnerabilities: "POST /v1/scan/vulnerabilities",
       financeUnits: "POST /v1/finance/units",
