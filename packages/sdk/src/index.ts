@@ -100,4 +100,23 @@ export type {
   SqlScanResult,
 } from "./types.js";
 
+export type {
+  CommandShellKind,
+  CommandSeverity,
+  CommandScanPolicy,
+  CommandScanInput,
+  CommandFinding,
+  CommandScanResult,
+} from "./types.js";
+
+export type {
+  UrlIpClass,
+  UrlSeverity,
+  UrlScanPolicy,
+  UrlScanInput,
+  UrlTarget,
+  UrlFinding,
+  UrlScanResult,
+} from "./types.js";
+
 export { AgentoolboxClient } from "./client.js";

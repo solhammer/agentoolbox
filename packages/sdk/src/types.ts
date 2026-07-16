@@ -436,3 +436,86 @@ export interface SqlScanResult {
   certificate: string;
   latencyMs: number;
 }
+
+// Mirror of @agentoolbox/cmdguard types (no internal dep in SDK)
+export type CommandShellKind = "bash" | "sh" | "zsh" | "powershell" | "generic";
+export type CommandSeverity = "low" | "medium" | "high" | "critical";
+
+export interface CommandScanPolicy {
+  blockSeverityAtOrAbove?: CommandSeverity;
+  allow?: string[];
+  protectedRefs?: string[];
+  maxSegments?: number;
+}
+
+export interface CommandScanInput {
+  command: string;
+  shell?: CommandShellKind;
+  policy?: CommandScanPolicy;
+}
+
+export interface CommandFinding {
+  ruleId: string;
+  severity: CommandSeverity;
+  segmentIndex: number;
+  message: string;
+  snippet: string;
+}
+
+export interface CommandScanResult {
+  verdict: Verdict;
+  segments: number;
+  findings: CommandFinding[];
+  counts: Record<CommandSeverity, number>;
+  certificate: string;
+  latencyMs: number;
+}
+
+// Mirror of @agentoolbox/netguard types (no internal dep in SDK)
+export type UrlIpClass =
+  | "public"
+  | "loopback"
+  | "private"
+  | "link-local"
+  | "reserved"
+  | "unknown";
+export type UrlSeverity = "low" | "medium" | "high" | "critical";
+
+export interface UrlScanPolicy {
+  allowSchemes?: string[];
+  allowHosts?: string[];
+  denyHosts?: string[];
+  denyPrivate?: boolean;
+  allowedPorts?: number[];
+  resolve?: boolean;
+  blockSeverityAtOrAbove?: UrlSeverity;
+}
+
+export interface UrlScanInput {
+  url: string;
+  policy?: UrlScanPolicy;
+}
+
+export interface UrlTarget {
+  scheme: string;
+  host: string;
+  hostType: "ipv4" | "ipv6" | "hostname";
+  ipClass: UrlIpClass;
+  port: number | null;
+  normalizedUrl: string;
+}
+
+export interface UrlFinding {
+  ruleId: string;
+  severity: UrlSeverity;
+  message: string;
+}
+
+export interface UrlScanResult {
+  verdict: Verdict;
+  target: UrlTarget;
+  findings: UrlFinding[];
+  counts: Record<UrlSeverity, number>;
+  certificate: string;
+  latencyMs: number;
+}

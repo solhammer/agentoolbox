@@ -38,6 +38,8 @@ jobs:
           pnpm --filter @agentoolbox/identity build
           pnpm --filter @agentoolbox/schema build
           pnpm --filter @agentoolbox/sqlguard build
+          pnpm --filter @agentoolbox/cmdguard build
+          pnpm --filter @agentoolbox/netguard build
           pnpm --filter @agentoolbox/finance build
 
       - name: Run tests
@@ -57,6 +59,8 @@ jobs:
           pnpm --filter @agentoolbox/identity typecheck
           pnpm --filter @agentoolbox/schema typecheck
           pnpm --filter @agentoolbox/sqlguard typecheck
+          pnpm --filter @agentoolbox/cmdguard typecheck
+          pnpm --filter @agentoolbox/netguard typecheck
           pnpm --filter @agentoolbox/finance typecheck
           pnpm --filter agent-toolbox-sdk typecheck
           pnpm --filter @agentoolbox/api typecheck

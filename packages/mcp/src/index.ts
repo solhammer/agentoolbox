@@ -16,6 +16,8 @@ import { checkCitation, computeDeadline } from "@agentoolbox/legal";
 import { validateIdentifier } from "@agentoolbox/identity";
 import { validateSchema } from "@agentoolbox/schema";
 import { scanSql } from "@agentoolbox/sqlguard";
+import { scanCommand } from "@agentoolbox/cmdguard";
+import { scanUrl } from "@agentoolbox/netguard";
 import {
   scanSecrets,
   detectPromptInjection,
@@ -535,6 +537,53 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ["sql"],
       },
     },
+    // ── Wave 4: execution & egress gates ─────────────────────────────────────
+    {
+      name: "scan_command",
+      description:
+        "Scans a shell command for dangerous / destructive patterns before execution — rm -rf /, curl|sh remote-exec, dd/mkfs raw disk writes, fork bombs, chmod 777, privilege escalation, force-push to protected branches, kubectl/docker destroys, firewall/security disables, and data exfiltration. Quote- and substitution-aware (content inside quotes never triggers). Deterministic and offline — never executes the command. Returns PASS/FLAG/BLOCK with findings. Call before an agent runs any shell command.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          command: { type: "string", description: "The shell command line to scan." },
+          shell: { type: "string", enum: ["bash", "sh", "zsh", "powershell", "generic"], description: "Target shell (default generic)." },
+          policy: {
+            type: "object",
+            properties: {
+              blockSeverityAtOrAbove: { type: "string", enum: ["low", "medium", "high", "critical"], description: "Minimum severity that yields BLOCK (default: high)." },
+              allow: { type: "array", items: { type: "string" }, description: "Rule IDs to suppress (e.g. ['CMD-PRIVILEGE-ESCALATION'])." },
+              protectedRefs: { type: "array", items: { type: "string" }, description: "Git refs treated as protected (default ['main','master'])." },
+              maxSegments: { type: "number", description: "Max pipeline segments before CMD-TOO-MANY-SEGMENTS (default 50)." },
+            },
+          },
+        },
+        required: ["command"],
+      },
+    },
+    {
+      name: "scan_url",
+      description:
+        "Scans a URL / host for SSRF and egress-policy violations before an outbound request or browser navigation — cloud instance-metadata endpoints (169.254.169.254), private/loopback/link-local targets, decimal/octal/hex IP obfuscation, denied schemes (file:, gopher:), credentials-in-URL, punycode/homograph hosts, and allow/deny-list + port policy. Deterministic and offline by default; optional DNS resolution detects DNS-rebinding when resolve=true. Returns PASS/FLAG/BLOCK with findings. Call before an agent fetches a URL.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          url: { type: "string", description: "The URL to scan." },
+          policy: {
+            type: "object",
+            properties: {
+              allowSchemes: { type: "array", items: { type: "string" }, description: "Allowed URL schemes (default ['http','https'])." },
+              allowHosts: { type: "array", items: { type: "string" }, description: "If set, host must be in this allowlist." },
+              denyHosts: { type: "array", items: { type: "string" }, description: "Hosts that are always blocked." },
+              denyPrivate: { type: "boolean", description: "Block RFC-1918 private targets (default true)." },
+              allowedPorts: { type: "array", items: { type: "number" }, description: "If set, only these explicit ports are allowed." },
+              resolve: { type: "boolean", description: "Resolve DNS and flag rebinding to private/metadata IPs (default false; the only networked option)." },
+              blockSeverityAtOrAbove: { type: "string", enum: ["low", "medium", "high", "critical"], description: "Minimum severity that yields BLOCK (default: high)." },
+            },
+          },
+        },
+        required: ["url"],
+      },
+    },
   ],
 }));
 
@@ -871,6 +920,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "scan_sql": {
         const result = scanSql(args as unknown as Parameters<typeof scanSql>[0]);
+        return json(result, result.verdict === "BLOCK");
+      }
+
+      case "scan_command": {
+        const result = scanCommand(args as unknown as Parameters<typeof scanCommand>[0]);
+        return json(result, result.verdict === "BLOCK");
+      }
+
+      case "scan_url": {
+        const result = await scanUrl(args as unknown as Parameters<typeof scanUrl>[0]);
         return json(result, result.verdict === "BLOCK");
       }
 

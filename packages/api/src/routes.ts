@@ -20,6 +20,8 @@ import { checkCitation, computeDeadline } from "@agentoolbox/legal";
 import { validateIdentifier } from "@agentoolbox/identity";
 import { validateSchema } from "@agentoolbox/schema";
 import { scanSql } from "@agentoolbox/sqlguard";
+import { scanCommand } from "@agentoolbox/cmdguard";
+import { scanUrl } from "@agentoolbox/netguard";
 import {
   ValidateImportsSchema,
   VerifySchema,
@@ -140,6 +142,8 @@ v1.get("/pricing", (c) => {
       "/v1/validate/identifier":  { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
       "/v1/validate/schema":      { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
       "/v1/scan/sql":             { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
+      "/v1/scan/command":         { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
+      "/v1/scan/url":             { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
     },
     conversion: { solPerCredit: 0.0001, creditsPerSol: 10_000 },
     freeTier: { calls: 10, auth: false },
@@ -507,6 +511,58 @@ v1.post(
   (c) => {
     const b = c.req.valid("json");
     const result = scanSql(b as unknown as Parameters<typeof scanSql>[0]);
+    return c.json(result);
+  }
+);
+
+// ── POST /v1/scan/command ───────────────────────────────────────────
+v1.post(
+  "/scan/command",
+  zValidator(
+    "json",
+    z.object({
+      command: z.string().min(1).max(200_000),
+      shell: z.enum(["bash", "sh", "zsh", "powershell", "generic"]).optional(),
+      policy: z
+        .object({
+          blockSeverityAtOrAbove: z.enum(["low", "medium", "high", "critical"]).optional(),
+          allow: z.array(z.string()).max(100).optional(),
+          protectedRefs: z.array(z.string()).max(100).optional(),
+          maxSegments: z.number().int().min(1).max(1000).optional(),
+        })
+        .optional(),
+    })
+  ),
+  (c) => {
+    const b = c.req.valid("json");
+    const result = scanCommand(b as unknown as Parameters<typeof scanCommand>[0]);
+    return c.json(result);
+  }
+);
+
+// ── POST /v1/scan/url ───────────────────────────────────────────────
+v1.post(
+  "/scan/url",
+  zValidator(
+    "json",
+    z.object({
+      url: z.string().min(1).max(8_192),
+      policy: z
+        .object({
+          allowSchemes: z.array(z.string()).max(20).optional(),
+          allowHosts: z.array(z.string()).max(200).optional(),
+          denyHosts: z.array(z.string()).max(200).optional(),
+          denyPrivate: z.boolean().optional(),
+          allowedPorts: z.array(z.number().int().min(0).max(65535)).max(50).optional(),
+          resolve: z.boolean().optional(),
+          blockSeverityAtOrAbove: z.enum(["low", "medium", "high", "critical"]).optional(),
+        })
+        .optional(),
+    })
+  ),
+  async (c) => {
+    const b = c.req.valid("json");
+    const result = await scanUrl(b as unknown as Parameters<typeof scanUrl>[0]);
     return c.json(result);
   }
 );

@@ -100,6 +100,9 @@ importers:
       '@agentoolbox/agent':
         specifier: workspace:*
         version: link:../agent
+      '@agentoolbox/cmdguard':
+        specifier: workspace:*
+        version: link:../cmdguard
       '@agentoolbox/compliance':
         specifier: workspace:*
         version: link:../compliance
@@ -124,6 +127,9 @@ importers:
       '@agentoolbox/legal':
         specifier: workspace:*
         version: link:../legal
+      '@agentoolbox/netguard':
+        specifier: workspace:*
+        version: link:../netguard
       '@agentoolbox/payments':
         specifier: workspace:*
         version: link:../payments
@@ -164,6 +170,18 @@ importers:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
+
+  packages/cmdguard:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.20.1)
 
   packages/compliance:
     devDependencies:
@@ -281,6 +299,9 @@ importers:
       '@agentoolbox/agent':
         specifier: workspace:*
         version: link:../agent
+      '@agentoolbox/cmdguard':
+        specifier: workspace:*
+        version: link:../cmdguard
       '@agentoolbox/compliance':
         specifier: workspace:*
         version: link:../compliance
@@ -305,6 +326,9 @@ importers:
       '@agentoolbox/legal':
         specifier: workspace:*
         version: link:../legal
+      '@agentoolbox/netguard':
+        specifier: workspace:*
+        version: link:../netguard
       '@agentoolbox/privacy':
         specifier: workspace:*
         version: link:../privacy
@@ -329,6 +353,18 @@ importers:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
+
+  packages/netguard:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.20.1)
 
   packages/payments:
     dependencies:

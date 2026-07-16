@@ -28,6 +28,8 @@ const icons: Record<string, string> = {
   'fingerprint': svg('<path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4" /><path d="M5 19.5C5.5 18 6 15 6 12c0-.7.12-1.37.34-2" /><path d="M17.29 21.02c.12-.6.43-2.3.5-3.02" /><path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4" /><path d="M8.65 22c.21-.66.45-1.32.57-2" /><path d="M14 13.12c0 2.38 0 6.38-1 8.88" /><path d="M2 16h.01" /><path d="M21.8 16c.2-2 .131-5.354 0-6" /><path d="M9 6.8a6 6 0 0 1 9 5.2c0 .47 0 1.17-.02 2" />'),
   'braces': svg('<path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1" /><path d="M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1" />'),
   'database': svg('<ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5v14a9 3 0 0 0 18 0V5" /><path d="M3 12a9 3 0 0 0 18 0" />'),
+  'terminal': svg('<polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" />'),
+  'globe': svg('<circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />'),
 };
 
 const features = [
@@ -222,6 +224,58 @@ const securityTools = [
       'Fintech and PCI: block raw card numbers from leaving the boundary',
       'HR and recruiting agents: guard employee records and offer letters',
       'GDPR / HIPAA / CCPA: a pre-flight gate plus an audit certificate for every egress',
+    ],
+  },
+  {
+    slug: 'scan-command',
+    suite: 'security',
+    title: 'Command Safety Gate',
+    body: 'Flags destructive shell commands before an agent runs them — rm -rf /, curl|sh, dd/mkfs, fork bombs, chmod 777, force-push to protected branches, kubectl/docker destroys. Quote- and substitution-aware.',
+    endpoint: 'POST /v1/scan/command',
+    icon: 'terminal',
+    credits: '1 credit · ~$0.015',
+    latency: '<5ms',
+    featured: true,
+    detail:
+      'The gate an agent calls before it executes a shell command. A quote-, comment-, and substitution-aware parser splits the command into segments and matches each against a bundled catalog of dangerous patterns — recursive root deletes, piping a remote download into a shell, raw disk writes, fork bombs, world-writable chmod, privilege escalation, force-pushes to protected refs, cluster/volume destroys, security disables, and data exfiltration — without ever executing it. Keywords inside quoted strings never false-positive.',
+    capabilities: [
+      '18 rules across critical / high / medium / low severity',
+      'Quote-, comment- and substitution-aware segment parser',
+      'Detects rm -rf, curl|sh, dd, fork bombs, chmod 777, force-push, kubectl delete',
+      'Policy: allow-list rule IDs, protected git refs, max segments',
+      'Deterministic and offline (never executes), with a SHA-256 certificate',
+    ],
+    useCases: [
+      'Gate shell commands from coding and computer-use agents',
+      'Sandbox and CI command allow-listing',
+      'Block accidental destructive operations before they run',
+      'A safety net in front of any exec/tool that shells out',
+    ],
+  },
+  {
+    slug: 'scan-url',
+    suite: 'security',
+    title: 'URL / SSRF Gate',
+    body: 'Blocks SSRF and egress-policy violations before an outbound request — cloud metadata (169.254.169.254), private/loopback targets, obfuscated IPs, denied schemes, credentials-in-URL, and punycode hosts.',
+    endpoint: 'POST /v1/scan/url',
+    icon: 'globe',
+    credits: '1 credit · ~$0.015',
+    latency: '<5ms',
+    featured: true,
+    detail:
+      'The gate an agent calls before it fetches a URL or navigates a browser. It parses the URL, normalizes IP obfuscations (decimal, octal, hex, IPv6), and classifies the host against bundled reserved-range tables — flagging cloud instance-metadata endpoints, RFC-1918 private / loopback / link-local targets, denied schemes (file:, gopher:), credentials embedded in the URL, and punycode/homograph hosts. Fully offline by default; an optional DNS check catches rebinding to internal addresses.',
+    capabilities: [
+      'Blocks cloud metadata endpoints (169.254.169.254) — the classic SSRF exfiltration',
+      'Classifies private / loopback / link-local / reserved targets',
+      'Decodes decimal / octal / hex / IPv6 IP obfuscation',
+      'Scheme, allow/deny-host, port, and credentials-in-URL policy',
+      'Deterministic and offline by default (opt-in DNS-rebinding check), with a certificate',
+    ],
+    useCases: [
+      'Gate outbound requests from tool-calling and browser agents',
+      'Prevent SSRF to cloud metadata and internal services',
+      'Egress allow-listing for autonomous agents',
+      'Catch obfuscated-IP and DNS-rebinding tricks pre-fetch',
     ],
   },
 ];
@@ -694,6 +748,7 @@ const mcpTools = [
   'screen_sanctions', 'rx_check',
   'check_tool_args', 'check_infra_plan', 'check_citation', 'compute_deadline',
   'validate_identifier', 'validate_schema', 'scan_sql',
+  'scan_command', 'scan_url',
 ];
 ---
 
@@ -704,7 +759,7 @@ const mcpTools = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="The quality layer every AI agent needs. Catch hallucinated packages, block bad outputs, redact PII/PHI/PCI, screen sanctions, validate tool arguments, gate infra changes, and guard trades — 24 agent-callable APIs, pay per call in SOL."
+      content="The quality layer every AI agent needs. Catch hallucinated packages, block bad outputs, redact PII/PHI/PCI, screen sanctions, validate tool arguments, gate infra changes, and guard trades — 26 agent-callable APIs, pay per call in SOL."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -779,7 +834,7 @@ const mcpTools = [
           </h1>
           <p class="mx-auto mt-6 max-w-2xl text-lg text-[#8b949e] sm:text-xl">
             Catch hallucinations. Block injections. Redact PII. Screen sanctions. Guard trades.
-            <span class="text-white">24 tools. One platform. Pay per call in SOL.</span>
+            <span class="text-white">26 tools. One platform. Pay per call in SOL.</span>
           </p>
           <div class="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <a
@@ -882,7 +937,7 @@ const mcpTools = [
 
       <!-- FEATURES -->
       <section class="mx-auto max-w-6xl px-6 py-16">
-        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">24 tools. Six suites. One platform.</h2>
+        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">26 tools. Six suites. One platform.</h2>
         <p class="mx-auto mt-3 max-w-2xl text-center text-[#8b949e]">
           Composable, agent-callable APIs that verify and improve LLM outputs before they cause damage.
           <span class="text-white">Click any tool for capabilities and use cases.</span>
@@ -1064,7 +1119,7 @@ const mcpTools = [
               Works with Claude, Warp, Cursor — any MCP client
             </h2>
             <p class="mt-4 text-[#8b949e]">
-              Drop agent-toolbox into your MCP config and your agent gets all 24 tools out of the box — import validation, the hallucination firewall, secret &amp; PII scanning, sanctions screening, medication safety, tool-argument validation, IaC risk gating, legal citation checks, token counting, and the full finance protection suite. No SDK, no glue code.
+              Drop agent-toolbox into your MCP config and your agent gets all 26 tools out of the box — import validation, the hallucination firewall, secret &amp; PII scanning, sanctions screening, medication safety, tool-argument validation, IaC risk gating, legal citation checks, token counting, and the full finance protection suite. No SDK, no glue code.
             </p>
             <div class="mt-6 flex flex-wrap gap-2">
               {
@@ -1104,7 +1159,7 @@ const mcpTools = [
             <ul class="mt-6 space-y-3 text-sm text-[#8b949e]">
               <li class="flex items-center gap-2"><span class="text-brand">✓</span> 10 calls per IP</li>
               <li class="flex items-center gap-2"><span class="text-brand">✓</span> No auth needed</li>
-              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All 24 endpoints</li>
+              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All 26 endpoints</li>
             </ul>
             <a
               href="#code"
@@ -1150,6 +1205,14 @@ const mcpTools = [
               </li>
               <li class="flex items-center justify-between border-b border-surface-border pb-2">
                 <span class="font-mono text-xs text-[#8b949e]">/v1/scan/sql <span class="ml-1 rounded bg-brand/15 px-1 text-[9px] font-semibold uppercase text-brand">new</span></span>
+                <span class="font-mono text-xs text-brand">0.0001 SOL</span>
+              </li>
+              <li class="flex items-center justify-between border-b border-surface-border pb-2">
+                <span class="font-mono text-xs text-[#8b949e]">/v1/scan/command <span class="ml-1 rounded bg-brand/15 px-1 text-[9px] font-semibold uppercase text-brand">new</span></span>
+                <span class="font-mono text-xs text-brand">0.0001 SOL</span>
+              </li>
+              <li class="flex items-center justify-between border-b border-surface-border pb-2">
+                <span class="font-mono text-xs text-[#8b949e]">/v1/scan/url <span class="ml-1 rounded bg-brand/15 px-1 text-[9px] font-semibold uppercase text-brand">new</span></span>
                 <span class="font-mono text-xs text-brand">0.0001 SOL</span>
               </li>
               <li class="flex items-center justify-between border-b border-surface-border pb-2">
