@@ -1,0 +1,18 @@
+{
+  "name": "@agentoolbox/legal",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Legal-suite tools for AI agents — deterministic citation validation and court-deadline computation with signed verdicts",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" } },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run --exclude '**/*.integration.test.*'",
+    "test:watch": "vitest --exclude '**/*.integration.test.*'",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": { "typescript": "^5.5.0", "vitest": "^2.0.0", "@types/node": "^22.0.0" }
+}
