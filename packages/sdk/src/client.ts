@@ -11,6 +11,14 @@ import type {
   SanctionsResult,
   RxCheckInput,
   RxCheckResult,
+  ToolArgsInput,
+  ToolArgsResult,
+  InfraPlanInput,
+  InfraPlanResult,
+  CitationInput,
+  CitationResult,
+  DeadlineInput,
+  DeadlineResult,
 } from "./types.js";
 
 export interface AgentoolboxClientOptions {
@@ -180,6 +188,57 @@ export class AgentoolboxClient {
    */
   async rxCheck(input: RxCheckInput): Promise<RxCheckResult> {
     return this.post<RxCheckResult>("/v1/health/rx-check", input);
+  }
+
+  // ── Tier 2: agent, infra, legal ───────────────────────────────────────
+
+  /**
+   * Validate a proposed tool/function call's arguments against a schema + policy.
+   * Deterministic and offline: types, ranges, enums, null-safety, unit-coercion
+   * (dollars-vs-cents), and cross-field rules. Returns PASS/FLAG/BLOCK.
+   *
+   * @example
+   * const r = await client.checkToolArgs({ args, schema: { fields: { amount: { type: "integer", unit: "cents", required: true } } } });
+   * if (r.verdict === "BLOCK") throw new Error(r.violations.map((v) => v.message).join("; "));
+   */
+  async checkToolArgs(input: ToolArgsInput): Promise<ToolArgsResult> {
+    return this.post<ToolArgsResult>("/v1/agent/tool-args", input);
+  }
+
+  /**
+   * Static IaC risk gate over Terraform plan / IAM / Kubernetes JSON.
+   * Deterministic and offline; flags high-blast-radius changes. No cloud creds.
+   *
+   * @example
+   * const r = await client.checkInfraPlan({ format: "terraform", document: planJson });
+   * if (r.verdict === "BLOCK") console.warn(r.findings.map((f) => f.ruleId));
+   */
+  async checkInfraPlan(input: InfraPlanInput): Promise<InfraPlanResult> {
+    return this.post<InfraPlanResult>("/v1/infra/plan/risk", input);
+  }
+
+  /**
+   * Validate US case citations (format + reporter) and, when source text is
+   * supplied, check quote fidelity. Deterministic and offline.
+   *
+   * @example
+   * const r = await client.checkCitation({ citation: "347 U.S. 483 (1954)" });
+   * if (r.verdict === "BLOCK") console.warn(r.citations[0]?.issues);
+   */
+  async checkCitation(input: CitationInput): Promise<CitationResult> {
+    return this.post<CitationResult>("/v1/legal/cite", input);
+  }
+
+  /**
+   * Compute a court or calendar deadline, skipping weekends and US federal
+   * holidays in court mode. Deterministic and offline.
+   *
+   * @example
+   * const r = await client.computeDeadline({ start: "2025-01-17", days: 14, mode: "court" });
+   * console.log(r.deadline);
+   */
+  async computeDeadline(input: DeadlineInput): Promise<DeadlineResult> {
+    return this.post<DeadlineResult>("/v1/legal/deadline", input);
   }
 
   /**

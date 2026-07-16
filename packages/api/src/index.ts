@@ -104,6 +104,10 @@ app.get("/", (c) =>
       financePositionCheck: "POST /v1/finance/position/check",
       complianceSanctions: "POST /v1/compliance/sanctions",
       healthRxCheck: "POST /v1/health/rx-check",
+      agentToolArgs: "POST /v1/agent/tool-args",
+      infraPlanRisk: "POST /v1/infra/plan/risk",
+      legalCite: "POST /v1/legal/cite",
+      legalDeadline: "POST /v1/legal/deadline",
     },
     docs: "https://agent-toolbox.ai/docs",
   })

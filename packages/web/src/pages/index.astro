@@ -22,6 +22,9 @@ const icons: Record<string, string> = {
   'shield-dollar': svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M12 8v8" /><path d="M14.5 10.5a2 2 0 0 0-2-1.5h-1a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3h-1a2 2 0 0 1-2-1.5" />'),
   'scale': svg('<path d="M12 3v18" /><path d="M7 21h10" /><path d="M5 7h14l-3 6a3 3 0 0 1-4 0z" transform="translate(1 0)" /><path d="m5 7-3 6a3 3 0 0 0 6 0z" /><path d="m19 7 3 6a3 3 0 0 1-6 0z" /><path d="M5 7h14" />'),
   'pill': svg('<path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z" /><path d="m8.5 8.5 7 7" />'),
+  'sliders': svg('<line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" /><line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" /><line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" /><line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" />'),
+  'server': svg('<rect x="2" y="2" width="20" height="8" rx="2" /><rect x="2" y="14" width="20" height="8" rx="2" /><line x1="6" y1="6" x2="6.01" y2="6" /><line x1="6" y1="18" x2="6.01" y2="18" />'),
+  'gavel': svg('<path d="m14 13-7.5 7.5a2.12 2.12 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" />'),
 };
 
 const features = [
@@ -439,7 +442,114 @@ const safetyTools = [
   },
 ];
 
-const allTools = [...features, ...securityTools, ...financeTools, ...safetyTools];
+const platformTools = [
+  {
+    slug: 'agent-tool-args',
+    suite: 'agent',
+    title: 'Tool-Argument Firewall',
+    body: 'Validates a tool call’s arguments against a schema + business policy: types, ranges, enums, null-safety, unit coercion (the dollars-vs-cents bug), and cross-field rules. Deterministic.',
+    endpoint: 'POST /v1/agent/tool-args',
+    icon: 'sliders',
+    credits: '1 credit \u00b7 ~$0.015',
+    latency: '<5ms',
+    featured: true,
+    detail:
+      'A generic business-rules gate for any function/tool call an agent is about to make. Declare a schema (types, required, enums, ranges, patterns, units) plus cross-field rules, and it returns PASS/FLAG/BLOCK with a precise list of violations before the call executes \u2014 catching the class of bug where an agent passes dollars where cents are expected, a null into a required field, or a value outside its allowed range.',
+    capabilities: [
+      'Type, required, enum, range, length, and regex checks',
+      'Null-safety and unknown-argument detection',
+      'Unit-coercion heuristics (dollars vs cents, the Stripe \u00d7100 bug)',
+      'Cross-field rules (e.g. min <= max) with severity-based verdicts',
+      'Deterministic and offline, with a SHA-256 certificate',
+    ],
+    useCases: [
+      'Gate any agent tool/function call touching money or quantities',
+      'Validate arguments before a destructive or irreversible action',
+      'Enforce business policy on LLM-generated parameters',
+      'A cheap, universal pre-execution guardrail',
+    ],
+  },
+  {
+    slug: 'infra-plan-risk',
+    suite: 'infra',
+    title: 'IaC Risk Gate',
+    body: 'Static blast-radius analysis of Terraform plans, IAM policies, and Kubernetes manifests against a bundled CIS/OPA-style ruleset. Flags public exposure, wildcards, and privileged pods. No cloud creds.',
+    endpoint: 'POST /v1/infra/plan/risk',
+    icon: 'server',
+    credits: '2 credits \u00b7 ~$0.030',
+    latency: '<10ms',
+    featured: true,
+    detail:
+      'The gate an agent calls before it applies infrastructure changes. Feed it a Terraform plan JSON (terraform show -json), an AWS IAM policy, or a Kubernetes manifest and it statically flags high-blast-radius risks \u2014 public 0.0.0.0/0 exposure, public buckets, IAM Action/Resource wildcards, destroy/replace of stateful resources, privileged or hostNetwork pods \u2014 with no cloud credentials and no network calls.',
+    capabilities: [
+      'Terraform plan JSON, AWS IAM, and Kubernetes manifests',
+      '20 bundled CIS/OPA-style rules across the three formats',
+      'Flags public exposure, IAM wildcards, stateful destroys, privileged pods',
+      'Severity-ranked findings with rule IDs; tunable block threshold',
+      'Deterministic and offline (no cloud credentials)',
+    ],
+    useCases: [
+      'Gate IaC changes an agent proposes before apply',
+      'PR bots reviewing Terraform / Kubernetes / IAM diffs',
+      'Guardrails for autonomous DevOps and platform agents',
+      'Catch blast-radius mistakes before they reach production',
+    ],
+  },
+  {
+    slug: 'legal-cite',
+    suite: 'legal',
+    title: 'Citation Validator',
+    body: 'Validates US case citations (volume / reporter / page / year) against 150+ reporter abbreviations, flags malformed or implausible cites, and checks quote fidelity against supplied source text.',
+    endpoint: 'POST /v1/legal/cite',
+    icon: 'gavel',
+    credits: '2 credits \u00b7 ~$0.030',
+    latency: '<5ms',
+    featured: true,
+    detail:
+      'The gate for any agent that cites case law. It parses and validates citations like “347 U.S. 483 (1954)” against a bundled table of 150+ reporter abbreviations, flags malformed structure, unknown reporters, and implausible years, and \u2014 when you supply the source text \u2014 verifies the quote actually appears, catching fabricated quotations before they reach a brief or a client.',
+    capabilities: [
+      'Parses volume / reporter / page / year',
+      '150+ Bluebook reporter abbreviations',
+      'Flags malformed, unknown-reporter, and implausible-year cites',
+      'Quote-fidelity check against supplied source text',
+      'Deterministic and offline, with a SHA-256 certificate',
+    ],
+    useCases: [
+      'Legal research and brief-drafting copilots',
+      'Catch hallucinated or fabricated case citations',
+      'Verify quotations against the record before filing',
+      'A citation gate for any law-facing agent',
+    ],
+  },
+  {
+    slug: 'legal-deadline',
+    suite: 'legal',
+    title: 'Deadline Calculator',
+    body: 'Court-day and calendar-day deadline math — counts forward or backward, skipping weekends and US federal holidays. Deterministic, with a signed result.',
+    endpoint: 'POST /v1/legal/deadline',
+    icon: 'gavel',
+    credits: '1 credit \u00b7 ~$0.015',
+    latency: '<5ms',
+    featured: true,
+    detail:
+      'Deterministic deadline arithmetic for legal and compliance workflows. Count a number of court days (skipping weekends and US federal holidays, with observed-day rules) or calendar days, forward or backward from a start date, and get the resolved date plus exactly which days were skipped \u2014 so an agent never miscounts a filing deadline.',
+    capabilities: [
+      'Court-day mode skips weekends + US federal holidays (2020–2035)',
+      'Calendar-day mode counts every day',
+      'Count forward (after) or backward (before)',
+      'Returns the resolved date and the days skipped',
+      'Deterministic and offline, with a SHA-256 certificate',
+    ],
+    useCases: [
+      'Compute filing and response deadlines',
+      'Statute-of-limitations math',
+      'Docketing and calendaring agents',
+      'Any deadline an agent must not miscount',
+    ],
+  },
+];
+
+const allTools = [...features, ...securityTools, ...financeTools, ...safetyTools, ...platformTools];
 
 const stats = [
   { value: '19.7%', label: 'of AI-generated packages are hallucinated', source: 'USENIX 2025' },
@@ -498,6 +608,7 @@ const mcpTools = [
   'finance_units', 'finance_price', 'finance_symbol', 'finance_token_risk',
   'finance_slippage', 'finance_order_risk', 'finance_position_check',
   'screen_sanctions', 'rx_check',
+  'check_tool_args', 'check_infra_plan', 'check_citation', 'compute_deadline',
 ];
 ---
 
@@ -508,7 +619,7 @@ const mcpTools = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="The quality layer every AI agent needs. Catch hallucinated packages, block bad outputs, redact PII/PHI/PCI before egress, screen sanctions, and guard trades — 17 agent-callable APIs, pay per call in SOL."
+      content="The quality layer every AI agent needs. Catch hallucinated packages, block bad outputs, redact PII/PHI/PCI, screen sanctions, validate tool arguments, gate infra changes, and guard trades — 21 agent-callable APIs, pay per call in SOL."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -583,7 +694,7 @@ const mcpTools = [
           </h1>
           <p class="mx-auto mt-6 max-w-2xl text-lg text-[#8b949e] sm:text-xl">
             Catch hallucinations. Block injections. Redact PII. Screen sanctions. Guard trades.
-            <span class="text-white">17 tools. One platform. Pay per call in SOL.</span>
+            <span class="text-white">21 tools. One platform. Pay per call in SOL.</span>
           </p>
           <div class="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <a
@@ -686,7 +797,7 @@ const mcpTools = [
 
       <!-- FEATURES -->
       <section class="mx-auto max-w-6xl px-6 py-16">
-        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">17 tools. Four suites. One platform.</h2>
+        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">21 tools. Five suites. One platform.</h2>
         <p class="mx-auto mt-3 max-w-2xl text-center text-[#8b949e]">
           Composable, agent-callable APIs that verify and improve LLM outputs before they cause damage.
           <span class="text-white">Click any tool for capabilities and use cases.</span>
@@ -771,6 +882,29 @@ const mcpTools = [
             ))
           }
         </div>
+
+        <!-- Agent, infra & legal tools -->
+        <p class="mt-14 text-center text-xs font-semibold uppercase tracking-wider text-brand">Agent, infra &amp; legal</p>
+        <p class="mt-1 text-center text-xs text-[#6e7681]">Deterministic guardrails for tool calls, infrastructure changes, and legal work</p>
+        <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {
+            platformTools.map((t) => (
+              <button type="button" data-modal={t.slug} class="group relative block w-full overflow-hidden rounded-xl border border-brand/40 bg-surface-card p-6 text-left transition hover:border-brand/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">
+                <div class="absolute inset-x-0 top-0 h-1 bg-brand/60"></div>
+                {t.featured && (
+                  <span class="absolute right-3 top-3 rounded-full bg-brand/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand">New</span>
+                )}
+                <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-brand/10 text-brand" set:html={icons[t.icon]} />
+                <h3 class="mt-5 text-base font-semibold">{t.title}</h3>
+                <p class="mt-2 text-sm leading-relaxed text-[#8b949e]">{t.body}</p>
+                <div class="mt-5 flex items-center justify-between">
+                  <span class="inline-block rounded-md border border-surface-border bg-surface px-3 py-1.5 font-mono text-xs text-brand">{t.endpoint}</span>
+                  <span class="text-xs font-medium text-brand opacity-0 transition group-hover:opacity-100">More →</span>
+                </div>
+              </button>
+            ))
+          }
+        </div>
       </section>
 
       <!-- CODE EXAMPLE -->
@@ -822,7 +956,7 @@ const mcpTools = [
               Works with Claude, Warp, Cursor — any MCP client
             </h2>
             <p class="mt-4 text-[#8b949e]">
-              Drop agent-toolbox into your MCP config and your agent gets all 17 tools out of the box — import validation, the hallucination firewall, secret &amp; PII scanning, sanctions screening, medication safety, token counting, and the full finance protection suite. No SDK, no glue code.
+              Drop agent-toolbox into your MCP config and your agent gets all 21 tools out of the box — import validation, the hallucination firewall, secret &amp; PII scanning, sanctions screening, medication safety, tool-argument validation, IaC risk gating, legal citation checks, token counting, and the full finance protection suite. No SDK, no glue code.
             </p>
             <div class="mt-6 flex flex-wrap gap-2">
               {
@@ -862,7 +996,7 @@ const mcpTools = [
             <ul class="mt-6 space-y-3 text-sm text-[#8b949e]">
               <li class="flex items-center gap-2"><span class="text-brand">✓</span> 10 calls per IP</li>
               <li class="flex items-center gap-2"><span class="text-brand">✓</span> No auth needed</li>
-              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All 17 endpoints</li>
+              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All 21 endpoints</li>
             </ul>
             <a
               href="#code"
@@ -892,6 +1026,14 @@ const mcpTools = [
               </li>
               <li class="flex items-center justify-between border-b border-surface-border pb-2">
                 <span class="font-mono text-xs text-[#8b949e]">/v1/health/rx-check <span class="ml-1 rounded bg-brand/15 px-1 text-[9px] font-semibold uppercase text-brand">new</span></span>
+                <span class="font-mono text-xs text-brand">0.0002 SOL</span>
+              </li>
+              <li class="flex items-center justify-between border-b border-surface-border pb-2">
+                <span class="font-mono text-xs text-[#8b949e]">/v1/agent/tool-args <span class="ml-1 rounded bg-brand/15 px-1 text-[9px] font-semibold uppercase text-brand">new</span></span>
+                <span class="font-mono text-xs text-brand">0.0001 SOL</span>
+              </li>
+              <li class="flex items-center justify-between border-b border-surface-border pb-2">
+                <span class="font-mono text-xs text-[#8b949e]">/v1/infra/plan/risk <span class="ml-1 rounded bg-brand/15 px-1 text-[9px] font-semibold uppercase text-brand">new</span></span>
                 <span class="font-mono text-xs text-brand">0.0002 SOL</span>
               </li>
               <li class="flex items-center justify-between border-b border-surface-border pb-2">

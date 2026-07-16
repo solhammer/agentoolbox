@@ -43,4 +43,37 @@ export type {
   RxCheckResult,
 } from "./types.js";
 
+export type {
+  ToolArgsSeverity,
+  ToolArgsFieldType,
+  ToolArgsFieldUnit,
+  ToolArgsFieldSpec,
+  ToolArgsCrossFieldRule,
+  ToolArgsSchema,
+  ToolArgsPolicy,
+  ToolArgsInput,
+  ToolArgsViolation,
+  ToolArgsResult,
+} from "./types.js";
+
+export type {
+  InfraSeverity,
+  InfraFormat,
+  InfraFinding,
+  InfraPlanPolicy,
+  InfraPlanInput,
+  InfraPlanResult,
+} from "./types.js";
+
+export type {
+  CitationInput,
+  ParsedCitation,
+  CitationEntry,
+  QuoteCheck,
+  CitationResult,
+  DeadlineInput,
+  SkippedDays,
+  DeadlineResult,
+} from "./types.js";
+
 export { AgentoolboxClient } from "./client.js";

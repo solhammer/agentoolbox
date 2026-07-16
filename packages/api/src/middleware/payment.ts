@@ -37,6 +37,10 @@ const ENDPOINT_COSTS: Record<string, number> = {
   "/v1/finance/position/check": 1,
   "/v1/compliance/sanctions": 1,
   "/v1/health/rx-check": 2,
+  "/v1/agent/tool-args": 1,
+  "/v1/infra/plan/risk": 2,
+  "/v1/legal/cite": 2,
+  "/v1/legal/deadline": 1,
 };
 
 /** Free tier: maximum anonymous calls per IP before a paid key is required. */
