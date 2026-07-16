@@ -14,6 +14,9 @@ import {
 import { scanPii } from "@agentoolbox/privacy";
 import { screenSanctions } from "@agentoolbox/compliance";
 import { rxCheck } from "@agentoolbox/health";
+import { checkToolArgs } from "@agentoolbox/agent";
+import { checkInfraPlan } from "@agentoolbox/infra";
+import { checkCitation, computeDeadline } from "@agentoolbox/legal";
 import {
   ValidateImportsSchema,
   VerifySchema,
@@ -127,6 +130,10 @@ v1.get("/pricing", (c) => {
       "/v1/scan/pii":             { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
       "/v1/compliance/sanctions": { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
       "/v1/health/rx-check":      { credits: 2, lamports: 200_000, sol: 0.0002, usdApprox: "~$0.030" },
+      "/v1/agent/tool-args":      { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
+      "/v1/infra/plan/risk":      { credits: 2, lamports: 200_000, sol: 0.0002, usdApprox: "~$0.030" },
+      "/v1/legal/cite":           { credits: 2, lamports: 200_000, sol: 0.0002, usdApprox: "~$0.030" },
+      "/v1/legal/deadline":       { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
     },
     conversion: { solPerCredit: 0.0001, creditsPerSol: 10_000 },
     freeTier: { calls: 10, auth: false },
@@ -313,6 +320,117 @@ v1.post(
           }
         : {}),
     });
+    return c.json(result);
+  }
+);
+
+// ── POST /v1/agent/tool-args ───────────────────────────────────────────────────
+const FieldSpecSchema = z.object({
+  type: z.enum(["string", "number", "integer", "boolean", "array", "object"]),
+  required: z.boolean().optional(),
+  nullable: z.boolean().optional(),
+  enum: z.array(z.union([z.string(), z.number()])).optional(),
+  min: z.number().optional(),
+  max: z.number().optional(),
+  minLength: z.number().optional(),
+  maxLength: z.number().optional(),
+  pattern: z.string().optional(),
+  unit: z.enum(["usd", "cents", "percent", "bps"]).optional(),
+});
+const CrossFieldRuleSchema = z.object({
+  op: z.enum(["lte", "gte", "lt", "gt", "eq", "neq"]),
+  left: z.string(),
+  right: z.union([z.string(), z.object({ const: z.union([z.number(), z.string()]) })]),
+  message: z.string().optional(),
+});
+v1.post(
+  "/agent/tool-args",
+  zValidator(
+    "json",
+    z.object({
+      tool: z.string().max(200).optional(),
+      args: z.record(z.unknown()),
+      schema: z.object({
+        fields: z.record(FieldSpecSchema),
+        allowUnknown: z.boolean().optional(),
+        rules: z.array(CrossFieldRuleSchema).optional(),
+      }),
+      policy: z
+        .object({
+          mode: z.enum(["block", "flag", "audit"]).optional(),
+          blockSeverityAtOrAbove: z.enum(["low", "medium", "high", "critical"]).optional(),
+        })
+        .optional(),
+    })
+  ),
+  (c) => {
+    const b = c.req.valid("json");
+    const result = checkToolArgs(b as unknown as Parameters<typeof checkToolArgs>[0]);
+    return c.json(result);
+  }
+);
+
+// ── POST /v1/infra/plan/risk ─────────────────────────────────────────────────
+v1.post(
+  "/infra/plan/risk",
+  zValidator(
+    "json",
+    z.object({
+      format: z.enum(["terraform", "iam", "k8s"]),
+      document: z.unknown(),
+      policy: z
+        .object({
+          blockSeverityAtOrAbove: z.enum(["low", "medium", "high", "critical"]).optional(),
+        })
+        .optional(),
+    })
+  ),
+  (c) => {
+    const b = c.req.valid("json");
+    const result = checkInfraPlan(b as unknown as Parameters<typeof checkInfraPlan>[0]);
+    return c.json(result);
+  }
+);
+
+// ── POST /v1/legal/cite ─────────────────────────────────────────────────────
+v1.post(
+  "/legal/cite",
+  zValidator(
+    "json",
+    z
+      .object({
+        citation: z.string().max(500).optional(),
+        citations: z.array(z.string().max(500)).max(200).optional(),
+        sourceText: z.string().max(200_000).optional(),
+        quote: z.string().max(10_000).optional(),
+      })
+      .refine((d) => d.citation !== undefined || (d.citations !== undefined && d.citations.length > 0), {
+        message: "Provide `citation` or a non-empty `citations` array",
+      })
+  ),
+  (c) => {
+    const b = c.req.valid("json");
+    const result = checkCitation(b as unknown as Parameters<typeof checkCitation>[0]);
+    return c.json(result);
+  }
+);
+
+// ── POST /v1/legal/deadline ────────────────────────────────────────────────
+v1.post(
+  "/legal/deadline",
+  zValidator(
+    "json",
+    z.object({
+      start: z.string().min(1).max(40),
+      days: z.number().int().min(0).max(100_000),
+      mode: z.enum(["court", "calendar"]).optional(),
+      direction: z.enum(["after", "before"]).optional(),
+      jurisdiction: z.string().max(80).optional(),
+    })
+  ),
+  (c) => {
+    const b = c.req.valid("json");
+    const result = computeDeadline(b as unknown as Parameters<typeof computeDeadline>[0]);
     return c.json(result);
   }
 );

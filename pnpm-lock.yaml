@@ -83,8 +83,23 @@ importers:
         specifier: ^5.4.0
         version: 5.4.21(@types/node@22.20.1)
 
+  packages/agent:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.20.1)
+
   packages/api:
     dependencies:
+      '@agentoolbox/agent':
+        specifier: workspace:*
+        version: link:../agent
       '@agentoolbox/compliance':
         specifier: workspace:*
         version: link:../compliance
@@ -100,6 +115,12 @@ importers:
       '@agentoolbox/health':
         specifier: workspace:*
         version: link:../health
+      '@agentoolbox/infra':
+        specifier: workspace:*
+        version: link:../infra
+      '@agentoolbox/legal':
+        specifier: workspace:*
+        version: link:../legal
       '@agentoolbox/payments':
         specifier: workspace:*
         version: link:../payments
@@ -206,12 +227,39 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.20.1)
 
+  packages/infra:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.20.1)
+
+  packages/legal:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.20.1)
+
   packages/mcp:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.0.0
         version: 1.29.0(zod@3.25.76)
     devDependencies:
+      '@agentoolbox/agent':
+        specifier: workspace:*
+        version: link:../agent
       '@agentoolbox/compliance':
         specifier: workspace:*
         version: link:../compliance
@@ -227,6 +275,12 @@ importers:
       '@agentoolbox/health':
         specifier: workspace:*
         version: link:../health
+      '@agentoolbox/infra':
+        specifier: workspace:*
+        version: link:../infra
+      '@agentoolbox/legal':
+        specifier: workspace:*
+        version: link:../legal
       '@agentoolbox/privacy':
         specifier: workspace:*
         version: link:../privacy

@@ -10,6 +10,9 @@ import { runFirewall } from "@agentoolbox/firewall";
 import { scanPii, type PiiPolicy } from "@agentoolbox/privacy";
 import { screenSanctions, type SanctionsInput } from "@agentoolbox/compliance";
 import { rxCheck, type RxCheckInput } from "@agentoolbox/health";
+import { checkToolArgs } from "@agentoolbox/agent";
+import { checkInfraPlan } from "@agentoolbox/infra";
+import { checkCitation, computeDeadline } from "@agentoolbox/legal";
 import {
   scanSecrets,
   detectPromptInjection,
@@ -396,6 +399,88 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ["medications"],
       },
     },
+    // ── Agent (tool-args) ─────────────────────────────────────────────────
+    {
+      name: "check_tool_args",
+      description:
+        "Validates a proposed tool/function call's arguments against a caller-supplied schema and policy: types, required fields, enums, numeric ranges, string length/pattern, null-safety, unknown args, unit-coercion (dollars-vs-cents), and cross-field rules. Deterministic and offline. Returns PASS/FLAG/BLOCK with violations. Call before executing a tool call involving money, quantities, or destructive effects.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          tool: { type: "string", description: "Optional name of the tool being called." },
+          args: { type: "object", description: "The proposed argument map to validate." },
+          schema: {
+            type: "object",
+            description: "Validation schema.",
+            properties: {
+              fields: { type: "object", description: "Map of fieldName -> FieldSpec { type, required, nullable, enum, min, max, minLength, maxLength, pattern, unit }." },
+              allowUnknown: { type: "boolean", description: "Allow args not declared in fields (default false)." },
+              rules: { type: "array", description: "Cross-field rules { op, left, right, message }.", items: { type: "object" } },
+            },
+            required: ["fields"],
+          },
+          policy: {
+            type: "object",
+            properties: {
+              mode: { type: "string", enum: ["block", "flag", "audit"] },
+              blockSeverityAtOrAbove: { type: "string", enum: ["low", "medium", "high", "critical"] },
+            },
+          },
+        },
+        required: ["args", "schema"],
+      },
+    },
+    // ── Infra (IaC risk) ───────────────────────────────────────────────
+    {
+      name: "check_infra_plan",
+      description:
+        "Static blast-radius / risk analysis of infrastructure-as-code against a bundled CIS/OPA-style ruleset. Accepts a Terraform plan JSON (terraform show -json), an AWS IAM policy JSON, or a Kubernetes manifest JSON. Flags public exposure, IAM wildcards, destroy/replace of stateful resources, privileged pods, and more. Deterministic and offline (no cloud credentials). Returns PASS/FLAG/BLOCK with findings.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          format: { type: "string", enum: ["terraform", "iam", "k8s"], description: "Document format." },
+          document: { type: "object", description: "The already-parsed JSON document to analyze." },
+          policy: {
+            type: "object",
+            properties: {
+              blockSeverityAtOrAbove: { type: "string", enum: ["low", "medium", "high", "critical"], description: "Minimum severity that yields BLOCK (default: high)." },
+            },
+          },
+        },
+        required: ["format", "document"],
+      },
+    },
+    // ── Legal ────────────────────────────────────────────────────────
+    {
+      name: "check_citation",
+      description:
+        "Validates US case-law citations (volume / reporter / page / year) against a bundled table of reporter abbreviations, flags malformed or implausible citations, and — when source text is supplied — checks quote fidelity to catch fabricated quotes. Deterministic and offline. Returns PASS/FLAG/BLOCK. Call before an agent presents a legal citation or quotation.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          citation: { type: "string", description: "A single citation string, e.g. '347 U.S. 483 (1954)'." },
+          citations: { type: "array", items: { type: "string" }, description: "Multiple citations to validate." },
+          sourceText: { type: "string", description: "Optional source text to check a quote against." },
+          quote: { type: "string", description: "Optional quote to locate within sourceText." },
+        },
+      },
+    },
+    {
+      name: "compute_deadline",
+      description:
+        "Computes a legal deadline by counting court days (skipping weekends and US federal holidays) or calendar days from a start date, forwards or backwards. Deterministic and offline. Returns the resolved date and what was skipped. Use for filing deadlines and statute-of-limitations math.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          start: { type: "string", description: "Start date, ISO 8601 (YYYY-MM-DD)." },
+          days: { type: "number", description: "Number of days to count (>= 0)." },
+          mode: { type: "string", enum: ["court", "calendar"], description: "court skips weekends+holidays; calendar counts all days (default calendar)." },
+          direction: { type: "string", enum: ["after", "before"], description: "Count forward or backward (default after)." },
+          jurisdiction: { type: "string", description: "Reserved; the US federal calendar is used." },
+        },
+        required: ["start", "days"],
+      },
+    },
   ],
 }));
 
@@ -697,6 +782,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "rx_check": {
         const result = rxCheck(args as unknown as RxCheckInput);
+        return json(result, result.verdict === "BLOCK");
+      }
+
+      case "check_tool_args": {
+        const result = checkToolArgs(args as unknown as Parameters<typeof checkToolArgs>[0]);
+        return json(result, result.verdict === "BLOCK");
+      }
+
+      case "check_infra_plan": {
+        const result = checkInfraPlan(args as unknown as Parameters<typeof checkInfraPlan>[0]);
+        return json(result, result.verdict === "BLOCK");
+      }
+
+      case "check_citation": {
+        const result = checkCitation(args as unknown as Parameters<typeof checkCitation>[0]);
+        return json(result, result.verdict === "BLOCK");
+      }
+
+      case "compute_deadline": {
+        const result = computeDeadline(args as unknown as Parameters<typeof computeDeadline>[0]);
         return json(result, result.verdict === "BLOCK");
       }
 

@@ -197,3 +197,154 @@ export interface RxCheckResult {
   latencyMs: number;
   disclaimer: string;
 }
+
+// Mirror of @agentoolbox/agent types (no internal dep in SDK)
+export type ToolArgsSeverity = "low" | "medium" | "high" | "critical";
+export type ToolArgsFieldType = "string" | "number" | "integer" | "boolean" | "array" | "object";
+export type ToolArgsFieldUnit = "usd" | "cents" | "percent" | "bps";
+
+export interface ToolArgsFieldSpec {
+  type: ToolArgsFieldType;
+  required?: boolean;
+  nullable?: boolean;
+  enum?: Array<string | number>;
+  min?: number;
+  max?: number;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  unit?: ToolArgsFieldUnit;
+}
+
+export interface ToolArgsCrossFieldRule {
+  op: "lte" | "gte" | "lt" | "gt" | "eq" | "neq";
+  left: string;
+  right: string | { const: number | string };
+  message?: string;
+}
+
+export interface ToolArgsSchema {
+  fields: Record<string, ToolArgsFieldSpec>;
+  allowUnknown?: boolean;
+  rules?: ToolArgsCrossFieldRule[];
+}
+
+export interface ToolArgsPolicy {
+  mode?: "block" | "flag" | "audit";
+  blockSeverityAtOrAbove?: ToolArgsSeverity;
+}
+
+export interface ToolArgsInput {
+  tool?: string;
+  args: Record<string, unknown>;
+  schema: ToolArgsSchema;
+  policy?: ToolArgsPolicy;
+}
+
+export interface ToolArgsViolation {
+  path: string;
+  rule: string;
+  severity: ToolArgsSeverity;
+  message: string;
+  expected?: unknown;
+  actual?: unknown;
+}
+
+export interface ToolArgsResult {
+  verdict: Verdict;
+  violations: ToolArgsViolation[];
+  counts: Record<ToolArgsSeverity, number>;
+  certificate: string;
+  latencyMs: number;
+}
+
+// Mirror of @agentoolbox/infra types (no internal dep in SDK)
+export type InfraSeverity = "low" | "medium" | "high" | "critical";
+export type InfraFormat = "terraform" | "iam" | "k8s";
+
+export interface InfraFinding {
+  ruleId: string;
+  severity: InfraSeverity;
+  resource: string;
+  message: string;
+  framework?: string;
+}
+
+export interface InfraPlanPolicy {
+  blockSeverityAtOrAbove?: InfraSeverity;
+}
+
+export interface InfraPlanInput {
+  format: InfraFormat;
+  document: unknown;
+  policy?: InfraPlanPolicy;
+}
+
+export interface InfraPlanResult {
+  verdict: Verdict;
+  findings: InfraFinding[];
+  counts: Record<InfraSeverity, number>;
+  certificate: string;
+  latencyMs: number;
+}
+
+// Mirror of @agentoolbox/legal types (no internal dep in SDK)
+export interface CitationInput {
+  citation?: string;
+  citations?: string[];
+  sourceText?: string;
+  quote?: string;
+}
+
+export interface ParsedCitation {
+  volume: number;
+  reporter: string;
+  page: number;
+  year: number;
+}
+
+export interface CitationEntry {
+  raw: string;
+  parsed?: ParsedCitation;
+  valid: boolean;
+  issues: string[];
+}
+
+export interface QuoteCheck {
+  found: boolean;
+  message: string;
+}
+
+export interface CitationResult {
+  verdict: Verdict;
+  citations: CitationEntry[];
+  quoteCheck?: QuoteCheck;
+  counts: { total: number; invalid: number };
+  certificate: string;
+  latencyMs: number;
+}
+
+export interface DeadlineInput {
+  start: string;
+  days: number;
+  mode?: "court" | "calendar";
+  direction?: "after" | "before";
+  jurisdiction?: string;
+}
+
+export interface SkippedDays {
+  weekends: number;
+  holidays: string[];
+}
+
+export interface DeadlineResult {
+  verdict: Verdict;
+  deadline: string;
+  startDate: string;
+  daysRequested: number;
+  mode: "court" | "calendar";
+  direction: "after" | "before";
+  skipped: SkippedDays;
+  certificate: string;
+  latencyMs: number;
+}
