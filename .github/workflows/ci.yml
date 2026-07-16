@@ -35,6 +35,9 @@ jobs:
           pnpm --filter @agentoolbox/agent build
           pnpm --filter @agentoolbox/infra build
           pnpm --filter @agentoolbox/legal build
+          pnpm --filter @agentoolbox/identity build
+          pnpm --filter @agentoolbox/schema build
+          pnpm --filter @agentoolbox/sqlguard build
           pnpm --filter @agentoolbox/finance build
 
       - name: Run tests
@@ -51,6 +54,9 @@ jobs:
           pnpm --filter @agentoolbox/agent typecheck
           pnpm --filter @agentoolbox/infra typecheck
           pnpm --filter @agentoolbox/legal typecheck
+          pnpm --filter @agentoolbox/identity typecheck
+          pnpm --filter @agentoolbox/schema typecheck
+          pnpm --filter @agentoolbox/sqlguard typecheck
           pnpm --filter @agentoolbox/finance typecheck
           pnpm --filter agent-toolbox-sdk typecheck
           pnpm --filter @agentoolbox/api typecheck

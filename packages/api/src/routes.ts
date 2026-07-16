@@ -17,6 +17,9 @@ import { rxCheck } from "@agentoolbox/health";
 import { checkToolArgs } from "@agentoolbox/agent";
 import { checkInfraPlan } from "@agentoolbox/infra";
 import { checkCitation, computeDeadline } from "@agentoolbox/legal";
+import { validateIdentifier } from "@agentoolbox/identity";
+import { validateSchema } from "@agentoolbox/schema";
+import { scanSql } from "@agentoolbox/sqlguard";
 import {
   ValidateImportsSchema,
   VerifySchema,
@@ -134,6 +137,9 @@ v1.get("/pricing", (c) => {
       "/v1/infra/plan/risk":      { credits: 2, lamports: 200_000, sol: 0.0002, usdApprox: "~$0.030" },
       "/v1/legal/cite":           { credits: 2, lamports: 200_000, sol: 0.0002, usdApprox: "~$0.030" },
       "/v1/legal/deadline":       { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
+      "/v1/validate/identifier":  { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
+      "/v1/validate/schema":      { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
+      "/v1/scan/sql":             { credits: 1, lamports: 100_000, sol: 0.0001, usdApprox: "~$0.015" },
     },
     conversion: { solPerCredit: 0.0001, creditsPerSol: 10_000 },
     freeTier: { calls: 10, auth: false },
@@ -431,6 +437,76 @@ v1.post(
   (c) => {
     const b = c.req.valid("json");
     const result = computeDeadline(b as unknown as Parameters<typeof computeDeadline>[0]);
+    return c.json(result);
+  }
+);
+
+// ── POST /v1/validate/identifier ──────────────────────────────────────────
+const IDENTIFIER_TYPES = [
+  "iban", "aba_routing", "swift_bic", "credit_card", "ein", "vat_eu",
+  "vin", "npi", "ssn", "eth_address", "sol_address",
+] as const;
+v1.post(
+  "/validate/identifier",
+  zValidator(
+    "json",
+    z
+      .object({
+        value: z.string().max(200).optional(),
+        values: z.array(z.string().max(200)).max(100).optional(),
+        type: z.enum(IDENTIFIER_TYPES).optional(),
+        types: z.array(z.enum(IDENTIFIER_TYPES)).optional(),
+      })
+      .refine((d) => d.value !== undefined || (d.values !== undefined && d.values.length > 0), {
+        message: "Provide `value` or a non-empty `values` array",
+      })
+  ),
+  (c) => {
+    const b = c.req.valid("json");
+    const result = validateIdentifier(b as unknown as Parameters<typeof validateIdentifier>[0]);
+    return c.json(result);
+  }
+);
+
+// ── POST /v1/validate/schema ────────────────────────────────────────────
+v1.post(
+  "/validate/schema",
+  zValidator(
+    "json",
+    z.object({
+      data: z.unknown(),
+      schema: z.record(z.unknown()),
+      policy: z.object({ mode: z.enum(["block", "flag", "audit"]).optional() }).optional(),
+    })
+  ),
+  (c) => {
+    const b = c.req.valid("json");
+    const result = validateSchema(b as unknown as Parameters<typeof validateSchema>[0]);
+    return c.json(result);
+  }
+);
+
+// ── POST /v1/scan/sql ───────────────────────────────────────────────
+v1.post(
+  "/scan/sql",
+  zValidator(
+    "json",
+    z.object({
+      sql: z.string().min(1).max(200_000),
+      dialect: z.enum(["postgres", "mysql", "sqlite", "tsql", "generic"]).optional(),
+      policy: z
+        .object({
+          allowDdl: z.boolean().optional(),
+          allowUnboundedWrites: z.boolean().optional(),
+          maxStatements: z.number().int().min(1).max(1000).optional(),
+          blockSeverityAtOrAbove: z.enum(["low", "medium", "high", "critical"]).optional(),
+        })
+        .optional(),
+    })
+  ),
+  (c) => {
+    const b = c.req.valid("json");
+    const result = scanSql(b as unknown as Parameters<typeof scanSql>[0]);
     return c.json(result);
   }
 );

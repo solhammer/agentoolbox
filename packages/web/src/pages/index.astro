@@ -25,6 +25,9 @@ const icons: Record<string, string> = {
   'sliders': svg('<line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" /><line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" /><line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" /><line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" />'),
   'server': svg('<rect x="2" y="2" width="20" height="8" rx="2" /><rect x="2" y="14" width="20" height="8" rx="2" /><line x1="6" y1="6" x2="6.01" y2="6" /><line x1="6" y1="18" x2="6.01" y2="18" />'),
   'gavel': svg('<path d="m14 13-7.5 7.5a2.12 2.12 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" />'),
+  'fingerprint': svg('<path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4" /><path d="M5 19.5C5.5 18 6 15 6 12c0-.7.12-1.37.34-2" /><path d="M17.29 21.02c.12-.6.43-2.3.5-3.02" /><path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4" /><path d="M8.65 22c.21-.66.45-1.32.57-2" /><path d="M14 13.12c0 2.38 0 6.38-1 8.88" /><path d="M2 16h.01" /><path d="M21.8 16c.2-2 .131-5.354 0-6" /><path d="M9 6.8a6 6 0 0 1 9 5.2c0 .47 0 1.17-.02 2" />'),
+  'braces': svg('<path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1" /><path d="M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1" />'),
+  'database': svg('<ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5v14a9 3 0 0 0 18 0V5" /><path d="M3 12a9 3 0 0 0 18 0" />'),
 };
 
 const features = [
@@ -549,7 +552,88 @@ const platformTools = [
   },
 ];
 
-const allTools = [...features, ...securityTools, ...financeTools, ...safetyTools, ...platformTools];
+const dataTools = [
+  {
+    slug: 'validate-identifier',
+    suite: 'data',
+    title: 'Identifier Validator',
+    body: 'Checksum-validates IBANs, ABA routing, SWIFT/BIC, credit cards, EIN, EU VAT, VIN, NPI, SSN, and ETH/SOL addresses. Auto-detects type; cards and SSNs are masked.',
+    endpoint: 'POST /v1/validate/identifier',
+    icon: 'fingerprint',
+    credits: '1 credit \u00b7 ~$0.015',
+    latency: '<5ms',
+    featured: true,
+    detail:
+      'The deterministic gate an agent calls before it stores, pays to, or transacts against a structured identifier. Each value is validated by its real check digit or format rule \u2014 Luhn for cards, ISO-7064 mod-97 for IBANs, mod-11 transliteration for VINs, EIP-55 for Ethereum addresses, base58 for Solana \u2014 and the type is auto-detected when not given. Sensitive values (cards, SSNs) are masked in the response.',
+    capabilities: [
+      '11 identifier types: IBAN, ABA, SWIFT/BIC, card, EIN, EU VAT, VIN, NPI, SSN, ETH, SOL',
+      'Real checksums: Luhn, ISO-7064, mod-11, EIP-55 keccak, base58',
+      'Auto-detection or explicit type; batch input',
+      'Card and SSN values masked to the last 4',
+      'Deterministic and offline, with a SHA-256 certificate',
+    ],
+    useCases: [
+      'KYC / onboarding and payment-setup agents',
+      'Validate bank, tax, and crypto identifiers before use',
+      'Catch mistyped or fabricated account numbers pre-transaction',
+      'A cross-industry data-entry guardrail',
+    ],
+  },
+  {
+    slug: 'validate-schema',
+    suite: 'data',
+    title: 'Schema Conformance',
+    body: 'Validates any JSON value against a JSON Schema (Draft-07 subset) \u2014 types, required, enums, ranges, patterns, formats, oneOf/allOf. Dependency-free and deterministic.',
+    endpoint: 'POST /v1/validate/schema',
+    icon: 'braces',
+    credits: '1 credit \u00b7 ~$0.015',
+    latency: '<5ms',
+    featured: true,
+    detail:
+      "The gate an agent calls to prove its own (or a tool's) structured output matches the contract before acting on it. A dependency-free JSON Schema validator (Draft-07 subset) that returns every error with a precise JSON path \u2014 types, required fields, enums, numeric ranges, string patterns and formats, array/object constraints, and oneOf/anyOf/allOf/not.",
+    capabilities: [
+      'Draft-07 subset: type, required, enum, const, ranges, pattern, format',
+      'Arrays (tuple + single), uniqueItems, additionalProperties',
+      'oneOf / anyOf / allOf / not and local $ref',
+      'Per-error JSON paths; depth + size guards',
+      'Deterministic and offline, with a SHA-256 certificate',
+    ],
+    useCases: [
+      "Gate an LLM's structured / tool-call output before acting",
+      'Validate API request/response payloads in agent pipelines',
+      'Enforce a data contract without shipping ajv',
+      'Catch malformed JSON before it hits downstream systems',
+    ],
+  },
+  {
+    slug: 'scan-sql',
+    suite: 'data',
+    title: 'SQL Safety Gate',
+    body: 'Flags destructive or injection-prone SQL before execution \u2014 DELETE/UPDATE without WHERE, DROP/TRUNCATE, WHERE 1=1, stacked statements, UNION injection. Comment- and string-aware.',
+    endpoint: 'POST /v1/scan/sql',
+    icon: 'database',
+    credits: '1 credit \u00b7 ~$0.015',
+    latency: '<5ms',
+    featured: true,
+    detail:
+      'The gate an agent calls before it runs SQL. A comment- and string-literal-aware tokenizer scans each statement for high-risk patterns \u2014 an unbounded DELETE/UPDATE, DROP or TRUNCATE, a WHERE 1=1 tautology, stacked statements, UNION-based injection, or a privilege change \u2014 without ever connecting to a database. Keywords inside string literals never false-positive.',
+    capabilities: [
+      'Unbounded DELETE/UPDATE, DROP/TRUNCATE, tautology, UNION-injection rules',
+      'Comment- and string-literal-aware tokenizer (no false positives)',
+      'Postgres / MySQL / SQLite / T-SQL / generic dialects',
+      'Severity-ranked findings; tunable policy (allow DDL, max statements)',
+      'Deterministic and offline (no DB connection), with a certificate',
+    ],
+    useCases: [
+      'Gate agent-generated SQL before execution',
+      'Text-to-SQL and analytics copilots',
+      'Block accidental mass deletes and drops',
+      'A safety net in front of any database tool',
+    ],
+  },
+];
+
+const allTools = [...features, ...securityTools, ...financeTools, ...safetyTools, ...platformTools, ...dataTools];
 
 const stats = [
   { value: '19.7%', label: 'of AI-generated packages are hallucinated', source: 'USENIX 2025' },
@@ -609,6 +693,7 @@ const mcpTools = [
   'finance_slippage', 'finance_order_risk', 'finance_position_check',
   'screen_sanctions', 'rx_check',
   'check_tool_args', 'check_infra_plan', 'check_citation', 'compute_deadline',
+  'validate_identifier', 'validate_schema', 'scan_sql',
 ];
 ---
 
@@ -619,7 +704,7 @@ const mcpTools = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="The quality layer every AI agent needs. Catch hallucinated packages, block bad outputs, redact PII/PHI/PCI, screen sanctions, validate tool arguments, gate infra changes, and guard trades — 21 agent-callable APIs, pay per call in SOL."
+      content="The quality layer every AI agent needs. Catch hallucinated packages, block bad outputs, redact PII/PHI/PCI, screen sanctions, validate tool arguments, gate infra changes, and guard trades — 24 agent-callable APIs, pay per call in SOL."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -694,7 +779,7 @@ const mcpTools = [
           </h1>
           <p class="mx-auto mt-6 max-w-2xl text-lg text-[#8b949e] sm:text-xl">
             Catch hallucinations. Block injections. Redact PII. Screen sanctions. Guard trades.
-            <span class="text-white">21 tools. One platform. Pay per call in SOL.</span>
+            <span class="text-white">24 tools. One platform. Pay per call in SOL.</span>
           </p>
           <div class="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <a
@@ -797,7 +882,7 @@ const mcpTools = [
 
       <!-- FEATURES -->
       <section class="mx-auto max-w-6xl px-6 py-16">
-        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">21 tools. Five suites. One platform.</h2>
+        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">24 tools. Six suites. One platform.</h2>
         <p class="mx-auto mt-3 max-w-2xl text-center text-[#8b949e]">
           Composable, agent-callable APIs that verify and improve LLM outputs before they cause damage.
           <span class="text-white">Click any tool for capabilities and use cases.</span>
@@ -905,6 +990,29 @@ const mcpTools = [
             ))
           }
         </div>
+
+        <!-- Data & validation tools -->
+        <p class="mt-14 text-center text-xs font-semibold uppercase tracking-wider text-brand">Data &amp; validation</p>
+        <p class="mt-1 text-center text-xs text-[#6e7681]">Deterministic validators for identifiers, structured output, and SQL</p>
+        <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
+          {
+            dataTools.map((t) => (
+              <button type="button" data-modal={t.slug} class="group relative block w-full overflow-hidden rounded-xl border border-brand/40 bg-surface-card p-6 text-left transition hover:border-brand/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">
+                <div class="absolute inset-x-0 top-0 h-1 bg-brand/60"></div>
+                {t.featured && (
+                  <span class="absolute right-3 top-3 rounded-full bg-brand/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand">New</span>
+                )}
+                <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-brand/10 text-brand" set:html={icons[t.icon]} />
+                <h3 class="mt-5 text-base font-semibold">{t.title}</h3>
+                <p class="mt-2 text-sm leading-relaxed text-[#8b949e]">{t.body}</p>
+                <div class="mt-5 flex items-center justify-between">
+                  <span class="inline-block rounded-md border border-surface-border bg-surface px-3 py-1.5 font-mono text-xs text-brand">{t.endpoint}</span>
+                  <span class="text-xs font-medium text-brand opacity-0 transition group-hover:opacity-100">More →</span>
+                </div>
+              </button>
+            ))
+          }
+        </div>
       </section>
 
       <!-- CODE EXAMPLE -->
@@ -956,7 +1064,7 @@ const mcpTools = [
               Works with Claude, Warp, Cursor — any MCP client
             </h2>
             <p class="mt-4 text-[#8b949e]">
-              Drop agent-toolbox into your MCP config and your agent gets all 21 tools out of the box — import validation, the hallucination firewall, secret &amp; PII scanning, sanctions screening, medication safety, tool-argument validation, IaC risk gating, legal citation checks, token counting, and the full finance protection suite. No SDK, no glue code.
+              Drop agent-toolbox into your MCP config and your agent gets all 24 tools out of the box — import validation, the hallucination firewall, secret &amp; PII scanning, sanctions screening, medication safety, tool-argument validation, IaC risk gating, legal citation checks, token counting, and the full finance protection suite. No SDK, no glue code.
             </p>
             <div class="mt-6 flex flex-wrap gap-2">
               {
@@ -996,7 +1104,7 @@ const mcpTools = [
             <ul class="mt-6 space-y-3 text-sm text-[#8b949e]">
               <li class="flex items-center gap-2"><span class="text-brand">✓</span> 10 calls per IP</li>
               <li class="flex items-center gap-2"><span class="text-brand">✓</span> No auth needed</li>
-              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All 21 endpoints</li>
+              <li class="flex items-center gap-2"><span class="text-brand">✓</span> All 24 endpoints</li>
             </ul>
             <a
               href="#code"
@@ -1035,6 +1143,14 @@ const mcpTools = [
               <li class="flex items-center justify-between border-b border-surface-border pb-2">
                 <span class="font-mono text-xs text-[#8b949e]">/v1/infra/plan/risk <span class="ml-1 rounded bg-brand/15 px-1 text-[9px] font-semibold uppercase text-brand">new</span></span>
                 <span class="font-mono text-xs text-brand">0.0002 SOL</span>
+              </li>
+              <li class="flex items-center justify-between border-b border-surface-border pb-2">
+                <span class="font-mono text-xs text-[#8b949e]">/v1/validate/identifier <span class="ml-1 rounded bg-brand/15 px-1 text-[9px] font-semibold uppercase text-brand">new</span></span>
+                <span class="font-mono text-xs text-brand">0.0001 SOL</span>
+              </li>
+              <li class="flex items-center justify-between border-b border-surface-border pb-2">
+                <span class="font-mono text-xs text-[#8b949e]">/v1/scan/sql <span class="ml-1 rounded bg-brand/15 px-1 text-[9px] font-semibold uppercase text-brand">new</span></span>
+                <span class="font-mono text-xs text-brand">0.0001 SOL</span>
               </li>
               <li class="flex items-center justify-between border-b border-surface-border pb-2">
                 <span class="font-mono text-xs text-[#8b949e]">/v1/verify</span>

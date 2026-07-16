@@ -19,6 +19,12 @@ import type {
   CitationResult,
   DeadlineInput,
   DeadlineResult,
+  IdentifierInput,
+  IdentifierResult,
+  SchemaValidateInput,
+  SchemaValidateResult,
+  SqlScanInput,
+  SqlScanResult,
 } from "./types.js";
 
 export interface AgentoolboxClientOptions {
@@ -239,6 +245,45 @@ export class AgentoolboxClient {
    */
   async computeDeadline(input: DeadlineInput): Promise<DeadlineResult> {
     return this.post<DeadlineResult>("/v1/legal/deadline", input);
+  }
+
+  // ── Wave 3: deterministic validators ──────────────────────────────────
+
+  /**
+   * Validate structured identifiers (IBAN, ABA routing, SWIFT/BIC, card, EIN,
+   * VAT, VIN, NPI, SSN, ETH/SOL address) via deterministic checksums. Card and
+   * SSN values are masked in the response.
+   *
+   * @example
+   * const r = await client.validateIdentifier({ value: "DE89370400440532013000", type: "iban" });
+   * if (r.verdict === "BLOCK") console.warn(r.results[0]?.detail);
+   */
+  async validateIdentifier(input: IdentifierInput): Promise<IdentifierResult> {
+    return this.post<IdentifierResult>("/v1/validate/identifier", input);
+  }
+
+  /**
+   * Validate a JSON value against a JSON Schema (Draft-07 subset). Deterministic
+   * and dependency-free — gate an LLM/tool's structured output.
+   *
+   * @example
+   * const r = await client.validateSchema({ data, schema });
+   * if (!r.valid) console.warn(r.errors);
+   */
+  async validateSchema(input: SchemaValidateInput): Promise<SchemaValidateResult> {
+    return this.post<SchemaValidateResult>("/v1/validate/schema", input);
+  }
+
+  /**
+   * Scan SQL for destructive / unbounded / injection patterns before executing
+   * it. Deterministic and offline (no DB connection).
+   *
+   * @example
+   * const r = await client.scanSql({ sql });
+   * if (r.verdict === "BLOCK") throw new Error(r.findings.map((f) => f.ruleId).join(", "));
+   */
+  async scanSql(input: SqlScanInput): Promise<SqlScanResult> {
+    return this.post<SqlScanResult>("/v1/scan/sql", input);
   }
 
   /**
