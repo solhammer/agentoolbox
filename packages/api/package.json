@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@agentoolbox/agent": "workspace:*",
+    "@agentoolbox/cmdguard": "workspace:*",
     "@agentoolbox/compliance": "workspace:*",
     "@agentoolbox/core": "workspace:*",
     "@agentoolbox/finance": "workspace:*",
@@ -22,6 +23,7 @@
     "@agentoolbox/identity": "workspace:*",
     "@agentoolbox/infra": "workspace:*",
     "@agentoolbox/legal": "workspace:*",
+    "@agentoolbox/netguard": "workspace:*",
     "@agentoolbox/payments": "workspace:*",
     "@agentoolbox/privacy": "workspace:*",
     "@agentoolbox/schema": "workspace:*",

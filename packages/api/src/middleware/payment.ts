@@ -44,6 +44,8 @@ const ENDPOINT_COSTS: Record<string, number> = {
   "/v1/validate/identifier": 1,
   "/v1/validate/schema": 1,
   "/v1/scan/sql": 1,
+  "/v1/scan/command": 1,
+  "/v1/scan/url": 1,
 };
 
 /** Free tier: maximum anonymous calls per IP before a paid key is required. */
