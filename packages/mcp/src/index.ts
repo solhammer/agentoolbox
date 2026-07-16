@@ -13,6 +13,9 @@ import { rxCheck, type RxCheckInput } from "@agentoolbox/health";
 import { checkToolArgs } from "@agentoolbox/agent";
 import { checkInfraPlan } from "@agentoolbox/infra";
 import { checkCitation, computeDeadline } from "@agentoolbox/legal";
+import { validateIdentifier } from "@agentoolbox/identity";
+import { validateSchema } from "@agentoolbox/schema";
+import { scanSql } from "@agentoolbox/sqlguard";
 import {
   scanSecrets,
   detectPromptInjection,
@@ -481,6 +484,57 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ["start", "days"],
       },
     },
+    // ── Wave 3: deterministic validators ────────────────────────────────────
+    {
+      name: "validate_identifier",
+      description:
+        "Validates structured identifiers (IBAN, ABA routing, SWIFT/BIC, credit card, EIN, EU VAT, VIN, NPI, US SSN, Ethereum/Solana address) via deterministic checksums and format rules. Auto-detects the type when not given. Card and SSN values are masked. Returns PASS/FLAG/BLOCK. Call before an agent stores, pays to, or transacts against an identifier.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          value: { type: "string", description: "A single identifier to validate." },
+          values: { type: "array", items: { type: "string" }, description: "Multiple identifiers to validate." },
+          type: { type: "string", enum: ["iban", "aba_routing", "swift_bic", "credit_card", "ein", "vat_eu", "vin", "npi", "ssn", "eth_address", "sol_address"], description: "Identifier type; omit to auto-detect." },
+          types: { type: "array", items: { type: "string", enum: ["iban", "aba_routing", "swift_bic", "credit_card", "ein", "vat_eu", "vin", "npi", "ssn", "eth_address", "sol_address"] }, description: "Restrict auto-detection to these types." },
+        },
+      },
+    },
+    {
+      name: "validate_schema",
+      description:
+        "Validates a JSON value against a caller-supplied JSON Schema (Draft-07 subset), deterministically and offline. Use to gate an LLM's or a tool's structured output before acting on it. Returns PASS/FLAG/BLOCK with per-error JSON paths.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          data: { description: "The JSON value to validate (any type)." },
+          schema: { type: "object", description: "JSON Schema (Draft-07 subset) to validate against." },
+          policy: { type: "object", properties: { mode: { type: "string", enum: ["block", "flag", "audit"] } } },
+        },
+        required: ["schema"],
+      },
+    },
+    {
+      name: "scan_sql",
+      description:
+        "Scans SQL for dangerous patterns before execution — DELETE/UPDATE without WHERE, DROP/TRUNCATE, tautologies (WHERE 1=1), stacked statements, UNION-based injection, and privilege changes. Comment- and string-literal-aware; no database connection. Returns PASS/FLAG/BLOCK with findings.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          sql: { type: "string", description: "The SQL to scan." },
+          dialect: { type: "string", enum: ["postgres", "mysql", "sqlite", "tsql", "generic"], description: "SQL dialect (default generic)." },
+          policy: {
+            type: "object",
+            properties: {
+              allowDdl: { type: "boolean" },
+              allowUnboundedWrites: { type: "boolean" },
+              maxStatements: { type: "number" },
+              blockSeverityAtOrAbove: { type: "string", enum: ["low", "medium", "high", "critical"] },
+            },
+          },
+        },
+        required: ["sql"],
+      },
+    },
   ],
 }));
 
@@ -802,6 +856,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "compute_deadline": {
         const result = computeDeadline(args as unknown as Parameters<typeof computeDeadline>[0]);
+        return json(result, result.verdict === "BLOCK");
+      }
+
+      case "validate_identifier": {
+        const result = validateIdentifier(args as unknown as Parameters<typeof validateIdentifier>[0]);
+        return json(result, result.verdict === "BLOCK");
+      }
+
+      case "validate_schema": {
+        const result = validateSchema(args as unknown as Parameters<typeof validateSchema>[0]);
+        return json(result, result.verdict === "BLOCK");
+      }
+
+      case "scan_sql": {
+        const result = scanSql(args as unknown as Parameters<typeof scanSql>[0]);
         return json(result, result.verdict === "BLOCK");
       }
 

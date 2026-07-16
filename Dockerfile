@@ -15,6 +15,9 @@ COPY packages/health/package.json ./packages/health/
 COPY packages/agent/package.json ./packages/agent/
 COPY packages/infra/package.json ./packages/infra/
 COPY packages/legal/package.json ./packages/legal/
+COPY packages/identity/package.json ./packages/identity/
+COPY packages/schema/package.json ./packages/schema/
+COPY packages/sqlguard/package.json ./packages/sqlguard/
 COPY packages/finance/package.json ./packages/finance/
 COPY packages/api/package.json ./packages/api/
 
@@ -42,6 +45,12 @@ COPY packages/infra/src ./packages/infra/src
 COPY packages/infra/tsconfig.json ./packages/infra/
 COPY packages/legal/src ./packages/legal/src
 COPY packages/legal/tsconfig.json ./packages/legal/
+COPY packages/identity/src ./packages/identity/src
+COPY packages/identity/tsconfig.json ./packages/identity/
+COPY packages/schema/src ./packages/schema/src
+COPY packages/schema/tsconfig.json ./packages/schema/
+COPY packages/sqlguard/src ./packages/sqlguard/src
+COPY packages/sqlguard/tsconfig.json ./packages/sqlguard/
 COPY packages/finance/src ./packages/finance/src
 COPY packages/finance/tsconfig.json ./packages/finance/
 COPY packages/api/src ./packages/api/src
@@ -58,6 +67,9 @@ RUN pnpm --filter @agentoolbox/health build
 RUN pnpm --filter @agentoolbox/agent build
 RUN pnpm --filter @agentoolbox/infra build
 RUN pnpm --filter @agentoolbox/legal build
+RUN pnpm --filter @agentoolbox/identity build
+RUN pnpm --filter @agentoolbox/schema build
+RUN pnpm --filter @agentoolbox/sqlguard build
 RUN pnpm --filter @agentoolbox/finance build
 RUN pnpm --filter @agentoolbox/api build
 

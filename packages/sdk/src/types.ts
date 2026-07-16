@@ -348,3 +348,91 @@ export interface DeadlineResult {
   certificate: string;
   latencyMs: number;
 }
+
+// Mirror of @agentoolbox/identity types (no internal dep in SDK)
+export type IdentifierType = "iban"|"aba_routing"|"swift_bic"|"credit_card"|"ein"|"vat_eu"|"vin"|"npi"|"ssn"|"eth_address"|"sol_address";
+export type IdentifierChecksum = "pass" | "fail" | "not_applicable";
+
+export interface IdentifierInput {
+  value?: string;
+  values?: string[];
+  type?: IdentifierType;
+  types?: IdentifierType[];
+}
+
+export interface IdentifierEntry {
+  value: string;
+  type: IdentifierType | "unknown";
+  valid: boolean;
+  checksum: IdentifierChecksum;
+  normalized?: string;
+  detail?: string;
+}
+
+export interface IdentifierResult {
+  verdict: Verdict;
+  results: IdentifierEntry[];
+  counts: { total: number; invalid: number };
+  certificate: string;
+  latencyMs: number;
+}
+
+// Mirror of @agentoolbox/schema types (no internal dep in SDK)
+export type SchemaMode = "block" | "flag" | "audit";
+
+export interface SchemaValidateInput {
+  data: unknown;
+  schema: Record<string, unknown>;
+  policy?: { mode?: SchemaMode };
+}
+
+export interface SchemaValidationError {
+  path: string;
+  keyword: string;
+  message: string;
+  expected?: unknown;
+  actual?: unknown;
+}
+
+export interface SchemaValidateResult {
+  verdict: Verdict;
+  valid: boolean;
+  errors: SchemaValidationError[];
+  counts: { errors: number };
+  certificate: string;
+  latencyMs: number;
+}
+
+// Mirror of @agentoolbox/sqlguard types (no internal dep in SDK)
+export type SqlDialect = "postgres" | "mysql" | "sqlite" | "tsql" | "generic";
+export type SqlSeverity = "low" | "medium" | "high" | "critical";
+
+export interface SqlScanPolicy {
+  allowDdl?: boolean;
+  allowUnboundedWrites?: boolean;
+  maxStatements?: number;
+  blockSeverityAtOrAbove?: SqlSeverity;
+}
+
+export interface SqlScanInput {
+  sql: string;
+  dialect?: SqlDialect;
+  policy?: SqlScanPolicy;
+}
+
+export interface SqlFinding {
+  ruleId: string;
+  severity: SqlSeverity;
+  statementIndex: number;
+  message: string;
+  snippet: string;
+}
+
+export interface SqlScanResult {
+  verdict: Verdict;
+  statements: number;
+  findings: SqlFinding[];
+  counts: Record<SqlSeverity, number>;
+  certificate: string;
+  latencyMs: number;
+}

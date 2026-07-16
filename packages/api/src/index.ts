@@ -108,6 +108,9 @@ app.get("/", (c) =>
       infraPlanRisk: "POST /v1/infra/plan/risk",
       legalCite: "POST /v1/legal/cite",
       legalDeadline: "POST /v1/legal/deadline",
+      validateIdentifier: "POST /v1/validate/identifier",
+      validateSchema: "POST /v1/validate/schema",
+      scanSql: "POST /v1/scan/sql",
     },
     docs: "https://agent-toolbox.ai/docs",
   })

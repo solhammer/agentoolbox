@@ -115,6 +115,9 @@ importers:
       '@agentoolbox/health':
         specifier: workspace:*
         version: link:../health
+      '@agentoolbox/identity':
+        specifier: workspace:*
+        version: link:../identity
       '@agentoolbox/infra':
         specifier: workspace:*
         version: link:../infra
@@ -127,6 +130,12 @@ importers:
       '@agentoolbox/privacy':
         specifier: workspace:*
         version: link:../privacy
+      '@agentoolbox/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@agentoolbox/sqlguard':
+        specifier: workspace:*
+        version: link:../sqlguard
       '@agentoolbox/validator':
         specifier: workspace:*
         version: link:../validator
@@ -227,6 +236,18 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.20.1)
 
+  packages/identity:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.20.1)
+
   packages/infra:
     devDependencies:
       '@types/node':
@@ -275,6 +296,9 @@ importers:
       '@agentoolbox/health':
         specifier: workspace:*
         version: link:../health
+      '@agentoolbox/identity':
+        specifier: workspace:*
+        version: link:../identity
       '@agentoolbox/infra':
         specifier: workspace:*
         version: link:../infra
@@ -284,6 +308,12 @@ importers:
       '@agentoolbox/privacy':
         specifier: workspace:*
         version: link:../privacy
+      '@agentoolbox/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@agentoolbox/sqlguard':
+        specifier: workspace:*
+        version: link:../sqlguard
       '@agentoolbox/validator':
         specifier: workspace:*
         version: link:../validator
@@ -325,11 +355,35 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.20.1)
 
+  packages/schema:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.20.1)
+
   packages/sdk:
     devDependencies:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
+
+  packages/sqlguard:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.20.1)
 
   packages/validator:
     devDependencies:

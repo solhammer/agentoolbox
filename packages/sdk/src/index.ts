@@ -76,4 +76,28 @@ export type {
   DeadlineResult,
 } from "./types.js";
 
+export type {
+  IdentifierType,
+  IdentifierChecksum,
+  IdentifierInput,
+  IdentifierEntry,
+  IdentifierResult,
+} from "./types.js";
+
+export type {
+  SchemaMode,
+  SchemaValidateInput,
+  SchemaValidationError,
+  SchemaValidateResult,
+} from "./types.js";
+
+export type {
+  SqlDialect,
+  SqlSeverity,
+  SqlScanPolicy,
+  SqlScanInput,
+  SqlFinding,
+  SqlScanResult,
+} from "./types.js";
+
 export { AgentoolboxClient } from "./client.js";
