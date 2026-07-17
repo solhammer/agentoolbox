@@ -20,6 +20,3167 @@
       }
     },
     "schemas": {
+      "ValidateImportsRequest": {
+        "type": "object",
+        "properties": {
+          "language": {
+            "type": "string",
+            "enum": [
+              "python",
+              "javascript",
+              "typescript",
+              "rust",
+              "go"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100000
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 30000
+          }
+        },
+        "required": [
+          "language",
+          "code"
+        ]
+      },
+      "ValidateImportsResponse": {
+        "type": "object",
+        "properties": {
+          "language": {
+            "type": "string",
+            "enum": [
+              "python",
+              "javascript",
+              "typescript",
+              "rust",
+              "go"
+            ]
+          },
+          "valid": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "raw": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "valid",
+                    "hallucinated",
+                    "unknown"
+                  ]
+                },
+                "registry": {
+                  "type": "string"
+                },
+                "registryUrl": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "raw",
+                "status"
+              ]
+            }
+          },
+          "hallucinated": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "raw": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "valid",
+                    "hallucinated",
+                    "unknown"
+                  ]
+                },
+                "registry": {
+                  "type": "string"
+                },
+                "registryUrl": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "raw",
+                "status"
+              ]
+            }
+          },
+          "unknown": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "raw": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "valid",
+                    "hallucinated",
+                    "unknown"
+                  ]
+                },
+                "registry": {
+                  "type": "string"
+                },
+                "registryUrl": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "raw",
+                "status"
+              ]
+            }
+          },
+          "totalImports": {
+            "type": "integer"
+          },
+          "hallucinationRate": {
+            "type": "number"
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          }
+        },
+        "required": [
+          "language",
+          "valid",
+          "hallucinated",
+          "unknown",
+          "totalImports",
+          "hallucinationRate",
+          "latencyMs"
+        ]
+      },
+      "VerifyRequest": {
+        "type": "object",
+        "properties": {
+          "outputType": {
+            "type": "string",
+            "enum": [
+              "code",
+              "natural_language",
+              "agent_action",
+              "factual_claim"
+            ]
+          },
+          "llmResponse": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200000
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "python",
+              "javascript",
+              "typescript",
+              "rust",
+              "go"
+            ]
+          },
+          "enforcementMode": {
+            "type": "string",
+            "enum": [
+              "block",
+              "flag",
+              "audit"
+            ],
+            "default": "block"
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 30000
+          }
+        },
+        "required": [
+          "outputType",
+          "llmResponse"
+        ]
+      },
+      "VerifyResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "overallScore": {
+            "type": "number"
+          },
+          "claims": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "verdict": {
+                  "type": "string",
+                  "enum": [
+                    "PASS",
+                    "FLAG",
+                    "BLOCK"
+                  ]
+                },
+                "confidence": {
+                  "type": "number"
+                },
+                "checkType": {
+                  "type": "string"
+                },
+                "evidence": {
+                  "type": "string"
+                },
+                "suggestedFix": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "text",
+                "verdict",
+                "confidence",
+                "checkType"
+              ]
+            }
+          },
+          "outputType": {
+            "type": "string",
+            "enum": [
+              "code",
+              "natural_language",
+              "agent_action",
+              "factual_claim"
+            ]
+          },
+          "enforcementMode": {
+            "type": "string",
+            "enum": [
+              "block",
+              "flag",
+              "audit"
+            ]
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          },
+          "certificate": {
+            "type": "string",
+            "description": "Tamper-evident SHA-256 certificate.",
+            "example": "sha256:5bbf2510c504a1c1"
+          },
+          "importValidation": {
+            "type": "object",
+            "properties": {
+              "valid": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "hallucinated": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "unknown": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "hallucinationRate": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "valid",
+              "hallucinated",
+              "unknown",
+              "hallucinationRate"
+            ]
+          }
+        },
+        "required": [
+          "verdict",
+          "overallScore",
+          "claims",
+          "outputType",
+          "enforcementMode",
+          "latencyMs",
+          "certificate"
+        ]
+      },
+      "DistillRequest": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "system",
+                    "user",
+                    "assistant",
+                    "tool"
+                  ]
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 500
+          },
+          "targetTokens": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 200000,
+            "default": 4000
+          },
+          "preserveSystemPrompt": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "messages"
+        ]
+      },
+      "DistillResponse": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "system",
+                    "user",
+                    "assistant",
+                    "tool"
+                  ]
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ]
+            }
+          },
+          "originalCount": {
+            "type": "integer"
+          },
+          "distilledCount": {
+            "type": "integer"
+          },
+          "estimatedTokens": {
+            "type": "integer"
+          },
+          "compressionRatio": {
+            "type": "number"
+          },
+          "method": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "messages",
+          "originalCount",
+          "distilledCount",
+          "estimatedTokens",
+          "compressionRatio",
+          "method"
+        ]
+      },
+      "ScanSecretsRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200000
+          },
+          "filename": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "ScanSecretsResponse": {
+        "type": "object",
+        "properties": {
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "match": {
+                  "type": "string"
+                },
+                "line": {
+                  "type": "integer"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "critical",
+                    "high",
+                    "medium"
+                  ]
+                },
+                "suggestion": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "match",
+                "line",
+                "severity",
+                "suggestion"
+              ]
+            }
+          },
+          "totalFindings": {
+            "type": "integer"
+          },
+          "critical": {
+            "type": "integer"
+          },
+          "high": {
+            "type": "integer"
+          },
+          "safe": {
+            "type": "boolean"
+          },
+          "filename": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "findings",
+          "totalFindings",
+          "critical",
+          "high",
+          "safe"
+        ]
+      },
+      "ScanInjectionRequest": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50000
+          },
+          "context": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "input"
+        ]
+      },
+      "ScanInjectionResponse": {
+        "type": "object",
+        "properties": {
+          "risk": {
+            "type": "string",
+            "enum": [
+              "safe",
+              "suspicious",
+              "injection"
+            ]
+          },
+          "score": {
+            "type": "number"
+          },
+          "patterns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "advice": {
+            "type": "string"
+          },
+          "context": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "risk",
+          "score",
+          "patterns",
+          "advice"
+        ]
+      },
+      "CountTokensRequest": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 500000
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ]
+            }
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "gpt-4",
+              "gpt-3.5",
+              "claude",
+              "gemini",
+              "generic"
+            ],
+            "default": "generic"
+          }
+        }
+      },
+      "CountTokensResponse": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "tokens": {
+                "type": "integer"
+              },
+              "characters": {
+                "type": "integer"
+              },
+              "words": {
+                "type": "integer"
+              },
+              "estimatedCostUsd": {
+                "type": "object",
+                "properties": {
+                  "input": {
+                    "type": "number"
+                  },
+                  "output1k": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "input",
+                  "output1k"
+                ]
+              },
+              "model": {
+                "type": "string",
+                "enum": [
+                  "gpt-4",
+                  "gpt-3.5",
+                  "claude",
+                  "gemini",
+                  "generic"
+                ]
+              }
+            },
+            "required": [
+              "tokens",
+              "characters",
+              "words",
+              "estimatedCostUsd",
+              "model"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "perMessage": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "role": {
+                      "type": "string"
+                    },
+                    "tokens": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "role",
+                    "tokens"
+                  ]
+                }
+              },
+              "estimatedCostUsd": {
+                "type": "object",
+                "properties": {
+                  "input": {
+                    "type": "number"
+                  },
+                  "output1k": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "input",
+                  "output1k"
+                ]
+              },
+              "model": {
+                "type": "string",
+                "enum": [
+                  "gpt-4",
+                  "gpt-3.5",
+                  "claude",
+                  "gemini",
+                  "generic"
+                ]
+              },
+              "contextWindowRemaining": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total",
+              "perMessage",
+              "estimatedCostUsd",
+              "model",
+              "contextWindowRemaining"
+            ]
+          }
+        ]
+      },
+      "ScanVulnerabilitiesRequest": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 50
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "python",
+              "javascript",
+              "typescript",
+              "rust",
+              "go"
+            ]
+          },
+          "timeoutMs": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "packages",
+          "language"
+        ]
+      },
+      "ScanVulnerabilitiesResponse": {
+        "type": "object",
+        "properties": {
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "package": {
+                  "type": "string"
+                },
+                "vulnerabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "summary": {
+                        "type": "string"
+                      },
+                      "severity": {
+                        "type": "string"
+                      },
+                      "aliases": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "summary",
+                      "severity",
+                      "aliases"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "package",
+                "vulnerabilities"
+              ]
+            }
+          },
+          "totalPackages": {
+            "type": "integer"
+          },
+          "vulnerablePackages": {
+            "type": "integer"
+          },
+          "safe": {
+            "type": "boolean"
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          }
+        },
+        "required": [
+          "findings",
+          "totalPackages",
+          "vulnerablePackages",
+          "safe",
+          "latencyMs"
+        ]
+      },
+      "ScanPiiRequest": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200000
+          },
+          "filename": {
+            "type": "string"
+          },
+          "policy": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "block",
+                  "flag",
+                  "audit"
+                ]
+              },
+              "blockSeverityAtOrAbove": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ]
+              },
+              "allowTypes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "jurisdictions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "redact": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
+      "ScanPiiResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "safe": {
+            "type": "boolean"
+          },
+          "score": {
+            "type": "number"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "PII",
+                "PHI",
+                "PCI"
+              ]
+            }
+          },
+          "totalFindings": {
+            "type": "integer"
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "low": {
+                "type": "integer"
+              },
+              "medium": {
+                "type": "integer"
+              },
+              "high": {
+                "type": "integer"
+              },
+              "critical": {
+                "type": "integer"
+              }
+            }
+          },
+          "entities": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "category": {
+                  "type": "string",
+                  "enum": [
+                    "PII",
+                    "PHI",
+                    "PCI"
+                  ]
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "match": {
+                  "type": "string"
+                },
+                "start": {
+                  "type": "integer"
+                },
+                "end": {
+                  "type": "integer"
+                },
+                "line": {
+                  "type": "integer"
+                },
+                "validated": {
+                  "type": "boolean"
+                },
+                "confidence": {
+                  "type": "number"
+                },
+                "jurisdiction": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "category",
+                "severity",
+                "match",
+                "start",
+                "end",
+                "line",
+                "validated",
+                "confidence"
+              ]
+            }
+          },
+          "redactedText": {
+            "type": "string"
+          },
+          "certificate": {
+            "type": "string",
+            "description": "Tamper-evident SHA-256 certificate.",
+            "example": "sha256:5bbf2510c504a1c1"
+          },
+          "enforcementMode": {
+            "type": "string",
+            "enum": [
+              "block",
+              "flag",
+              "audit"
+            ]
+          },
+          "filename": {
+            "type": "string"
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          }
+        },
+        "required": [
+          "verdict",
+          "safe",
+          "score",
+          "categories",
+          "totalFindings",
+          "counts",
+          "entities",
+          "certificate",
+          "enforcementMode",
+          "latencyMs"
+        ]
+      },
+      "ScanCommandRequest": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200000
+          },
+          "shell": {
+            "type": "string",
+            "enum": [
+              "bash",
+              "sh",
+              "zsh",
+              "powershell",
+              "generic"
+            ]
+          },
+          "policy": {
+            "type": "object",
+            "properties": {
+              "blockSeverityAtOrAbove": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ]
+              },
+              "allow": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 100
+              },
+              "protectedRefs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 100
+              },
+              "maxSegments": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000
+              }
+            }
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "ScanCommandResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "segments": {
+            "type": "integer"
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ruleId": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "segmentIndex": {
+                  "type": "integer"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "snippet": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "ruleId",
+                "severity",
+                "segmentIndex",
+                "message",
+                "snippet"
+              ]
+            }
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "low": {
+                "type": "integer"
+              },
+              "medium": {
+                "type": "integer"
+              },
+              "high": {
+                "type": "integer"
+              },
+              "critical": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "certificate": {
+            "type": "string",
+            "description": "Tamper-evident SHA-256 certificate.",
+            "example": "sha256:5bbf2510c504a1c1"
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          }
+        },
+        "required": [
+          "verdict",
+          "segments",
+          "findings",
+          "counts",
+          "certificate",
+          "latencyMs"
+        ]
+      },
+      "ScanUrlRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8192
+          },
+          "policy": {
+            "type": "object",
+            "properties": {
+              "allowSchemes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 20
+              },
+              "allowHosts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 200
+              },
+              "denyHosts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 200
+              },
+              "denyPrivate": {
+                "type": "boolean"
+              },
+              "allowedPorts": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "maxItems": 50
+              },
+              "resolve": {
+                "type": "boolean"
+              },
+              "blockSeverityAtOrAbove": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "ScanUrlResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "scheme": {
+                "type": "string"
+              },
+              "host": {
+                "type": "string"
+              },
+              "hostType": {
+                "type": "string",
+                "enum": [
+                  "ipv4",
+                  "ipv6",
+                  "hostname"
+                ]
+              },
+              "ipClass": {
+                "type": "string",
+                "enum": [
+                  "public",
+                  "loopback",
+                  "private",
+                  "link-local",
+                  "reserved",
+                  "unknown"
+                ]
+              },
+              "port": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "normalizedUrl": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "scheme",
+              "host",
+              "hostType",
+              "ipClass",
+              "port",
+              "normalizedUrl"
+            ]
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ruleId": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "ruleId",
+                "severity",
+                "message"
+              ]
+            }
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "low": {
+                "type": "integer"
+              },
+              "medium": {
+                "type": "integer"
+              },
+              "high": {
+                "type": "integer"
+              },
+              "critical": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "certificate": {
+            "type": "string",
+            "description": "Tamper-evident SHA-256 certificate.",
+            "example": "sha256:5bbf2510c504a1c1"
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          }
+        },
+        "required": [
+          "verdict",
+          "target",
+          "findings",
+          "counts",
+          "certificate",
+          "latencyMs"
+        ]
+      },
+      "FinanceUnitsRequest": {
+        "type": "object",
+        "properties": {
+          "tokenAddress": {
+            "type": "string"
+          },
+          "rawAmount": {
+            "type": "string"
+          },
+          "uiAmount": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "chain": {
+            "type": "string",
+            "enum": [
+              "solana",
+              "ethereum",
+              "bsc",
+              "polygon",
+              "base",
+              "arbitrum"
+            ]
+          }
+        },
+        "required": [
+          "tokenAddress",
+          "rawAmount",
+          "uiAmount",
+          "chain"
+        ]
+      },
+      "FinanceUnitsResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "score": {
+            "type": "number"
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "info",
+                    "warn",
+                    "critical"
+                  ]
+                },
+                "detail": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "severity",
+                "detail"
+              ]
+            }
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          },
+          "authoritative_decimals": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "expected_raw": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "actual_raw": {
+            "type": "string"
+          },
+          "deviation_pct": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "verdict",
+          "score",
+          "risks",
+          "latencyMs",
+          "authoritative_decimals",
+          "expected_raw",
+          "actual_raw",
+          "deviation_pct"
+        ]
+      },
+      "FinancePriceRequest": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string"
+          },
+          "tokenAddress": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string",
+            "enum": [
+              "crypto",
+              "stock",
+              "forex"
+            ]
+          },
+          "proposedPrice": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "maxAgeSeconds": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "divergenceThresholdPct": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "assetType"
+        ]
+      },
+      "FinancePriceResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "score": {
+            "type": "number"
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "info",
+                    "warn",
+                    "critical"
+                  ]
+                },
+                "detail": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "severity",
+                "detail"
+              ]
+            }
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "priceUsd": {
+                  "type": "number"
+                },
+                "ageSeconds": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "available": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "name",
+                "priceUsd",
+                "ageSeconds",
+                "available"
+              ]
+            }
+          },
+          "consensusPrice": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "proposedPriceDeviation": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "verdict",
+          "score",
+          "risks",
+          "latencyMs",
+          "sources",
+          "consensusPrice",
+          "proposedPriceDeviation"
+        ]
+      },
+      "FinanceSymbolRequest": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string",
+            "enum": [
+              "crypto",
+              "stock"
+            ]
+          },
+          "expectedName": {
+            "type": "string"
+          },
+          "chain": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol",
+          "assetType"
+        ]
+      },
+      "FinanceSymbolResponse": {
+        "type": "object",
+        "properties": {
+          "found": {
+            "type": "boolean"
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "symbol": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "exchange": {
+                  "type": "string"
+                },
+                "liquidity": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "symbol",
+                "name"
+              ]
+            }
+          },
+          "ambiguous": {
+            "type": "boolean"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          }
+        },
+        "required": [
+          "found",
+          "matches",
+          "ambiguous",
+          "verdict"
+        ]
+      },
+      "FinanceTokenRiskRequest": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "chain": {
+            "type": "string",
+            "enum": [
+              "solana",
+              "ethereum",
+              "bsc",
+              "polygon",
+              "base",
+              "arbitrum"
+            ]
+          },
+          "maxRugScore": {
+            "type": "number"
+          },
+          "requireLpLocked": {
+            "type": "boolean"
+          },
+          "blockIfMintAuthority": {
+            "type": "boolean"
+          },
+          "blockIfFreezeAuthority": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "address",
+          "chain"
+        ]
+      },
+      "FinanceTokenRiskResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "score": {
+            "type": "number"
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "info",
+                    "warn",
+                    "critical"
+                  ]
+                },
+                "detail": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "severity",
+                "detail"
+              ]
+            }
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          },
+          "rugScore": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "mintAuthorityActive": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "freezeAuthorityActive": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "lpLockedPct": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "specificRisks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "verdict",
+          "score",
+          "risks",
+          "latencyMs",
+          "rugScore",
+          "mintAuthorityActive",
+          "freezeAuthorityActive",
+          "lpLockedPct",
+          "specificRisks"
+        ]
+      },
+      "FinanceSlippageRequest": {
+        "type": "object",
+        "properties": {
+          "tokenAddress": {
+            "type": "string"
+          },
+          "chain": {
+            "type": "string"
+          },
+          "tradeUsd": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "maxPriceImpactPct": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "minLiquidityUsd": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "tokenAddress",
+          "chain",
+          "tradeUsd"
+        ]
+      },
+      "FinanceSlippageResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "score": {
+            "type": "number"
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "info",
+                    "warn",
+                    "critical"
+                  ]
+                },
+                "detail": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "severity",
+                "detail"
+              ]
+            }
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          },
+          "poolLiquidityUsd": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "estimatedPriceImpactPct": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "volume24h": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "washTradingFlag": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "verdict",
+          "score",
+          "risks",
+          "latencyMs",
+          "poolLiquidityUsd",
+          "estimatedPriceImpactPct",
+          "volume24h",
+          "washTradingFlag"
+        ]
+      },
+      "FinanceOrderRiskRequest": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string"
+          },
+          "tokenAddress": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string",
+            "enum": [
+              "crypto",
+              "stock"
+            ]
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "buy",
+              "sell"
+            ]
+          },
+          "tradeUsd": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "portfolioValueUsd": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "chain": {
+            "type": "string"
+          },
+          "leverage": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "assetType",
+          "side",
+          "tradeUsd"
+        ]
+      },
+      "FinanceOrderRiskResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "overallScore": {
+            "type": "number"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "verdict": {
+                  "type": "string",
+                  "enum": [
+                    "PASS",
+                    "FLAG",
+                    "BLOCK"
+                  ]
+                },
+                "score": {
+                  "type": "number"
+                },
+                "risks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string"
+                      },
+                      "severity": {
+                        "type": "string",
+                        "enum": [
+                          "info",
+                          "warn",
+                          "critical"
+                        ]
+                      },
+                      "detail": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "severity",
+                      "detail"
+                    ]
+                  }
+                },
+                "latencyMs": {
+                  "type": "number",
+                  "description": "Server compute time in ms."
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "verdict",
+                "score",
+                "risks",
+                "latencyMs",
+                "name"
+              ]
+            }
+          },
+          "blockedBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          }
+        },
+        "required": [
+          "verdict",
+          "overallScore",
+          "checks",
+          "blockedBy",
+          "latencyMs"
+        ]
+      },
+      "FinancePositionCheckRequest": {
+        "type": "object",
+        "properties": {
+          "trade": {
+            "type": "object",
+            "properties": {
+              "symbol": {
+                "type": "string"
+              },
+              "side": {
+                "type": "string",
+                "enum": [
+                  "buy",
+                  "sell",
+                  "long",
+                  "short"
+                ]
+              },
+              "tradeUsd": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "leverage": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "assetType": {
+                "type": "string",
+                "enum": [
+                  "crypto",
+                  "stock",
+                  "forex"
+                ]
+              }
+            },
+            "required": [
+              "symbol",
+              "side",
+              "tradeUsd",
+              "assetType"
+            ]
+          },
+          "portfolio": {
+            "type": "object",
+            "properties": {
+              "totalValueUsd": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "cashUsd": {
+                "type": "number",
+                "minimum": 0
+              },
+              "dailyPnlUsd": {
+                "type": "number"
+              },
+              "openPositions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "assetAllocation": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "number"
+                }
+              }
+            },
+            "required": [
+              "totalValueUsd",
+              "cashUsd"
+            ]
+          },
+          "rules": {
+            "type": "object",
+            "properties": {
+              "maxPositionPct": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 100
+              },
+              "maxDailyLossPct": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "maxOpenPositions": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "maxLeverage": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "allowedAssets": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "killSwitch": {
+                "type": "boolean"
+              },
+              "maxSingleTradeUsd": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        },
+        "required": [
+          "trade",
+          "portfolio"
+        ]
+      },
+      "FinancePositionCheckResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "score": {
+            "type": "number"
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "info",
+                    "warn",
+                    "critical"
+                  ]
+                },
+                "detail": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "severity",
+                "detail"
+              ]
+            }
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          },
+          "effectiveUsd": {
+            "type": "number"
+          },
+          "positionPct": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "violations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "verdict",
+          "score",
+          "risks",
+          "latencyMs",
+          "effectiveUsd",
+          "positionPct",
+          "violations"
+        ]
+      },
+      "ComplianceSanctionsRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "names": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "maxItems": 100
+          },
+          "minScore": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "lists": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50
+          },
+          "entityTypes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "individual",
+                "entity",
+                "vessel",
+                "aircraft",
+                "unknown"
+              ]
+            }
+          },
+          "fuzzy": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ComplianceSanctionsResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string"
+                },
+                "listedName": {
+                  "type": "string"
+                },
+                "matchedAlias": {
+                  "type": "string"
+                },
+                "score": {
+                  "type": "number"
+                },
+                "matchType": {
+                  "type": "string",
+                  "enum": [
+                    "exact",
+                    "alias",
+                    "fuzzy"
+                  ]
+                },
+                "list": {
+                  "type": "string"
+                },
+                "program": {
+                  "type": "string"
+                },
+                "entityType": {
+                  "type": "string",
+                  "enum": [
+                    "individual",
+                    "entity",
+                    "vessel",
+                    "aircraft",
+                    "unknown"
+                  ]
+                },
+                "id": {
+                  "type": "string"
+                },
+                "jurisdiction": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "query",
+                "listedName",
+                "score",
+                "matchType",
+                "list",
+                "entityType"
+              ]
+            }
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "block": {
+                "type": "integer"
+              },
+              "flag": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total",
+              "block",
+              "flag"
+            ]
+          },
+          "screened": {
+            "type": "integer"
+          },
+          "datasetDate": {
+            "type": "string"
+          },
+          "certificate": {
+            "type": "string",
+            "description": "Tamper-evident SHA-256 certificate.",
+            "example": "sha256:5bbf2510c504a1c1"
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          }
+        },
+        "required": [
+          "verdict",
+          "matches",
+          "counts",
+          "screened",
+          "datasetDate",
+          "certificate",
+          "latencyMs"
+        ]
+      },
+      "HealthRxCheckRequest": {
+        "type": "object",
+        "properties": {
+          "medications": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "dose": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 20
+                },
+                "route": {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                "frequencyPerDay": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 100
+                }
+              },
+              "required": [
+                "name"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 50
+          },
+          "patient": {
+            "type": "object",
+            "properties": {
+              "weightKg": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 1000
+              },
+              "ageYears": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 150
+              }
+            }
+          },
+          "policy": {
+            "type": "object",
+            "properties": {
+              "blockSeverityAtOrAbove": {
+                "type": "string",
+                "enum": [
+                  "moderate",
+                  "major",
+                  "contraindicated"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "medications"
+        ]
+      },
+      "HealthRxCheckResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "unit",
+                    "dose",
+                    "interaction"
+                  ]
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "moderate",
+                    "major",
+                    "contraindicated"
+                  ]
+                },
+                "drugs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "message": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "severity",
+                "drugs",
+                "message"
+              ]
+            }
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "low": {
+                "type": "integer"
+              },
+              "moderate": {
+                "type": "integer"
+              },
+              "major": {
+                "type": "integer"
+              },
+              "contraindicated": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "low",
+              "moderate",
+              "major",
+              "contraindicated"
+            ]
+          },
+          "certificate": {
+            "type": "string",
+            "description": "Tamper-evident SHA-256 certificate.",
+            "example": "sha256:5bbf2510c504a1c1"
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          },
+          "disclaimer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "verdict",
+          "findings",
+          "counts",
+          "certificate",
+          "latencyMs",
+          "disclaimer"
+        ]
+      },
+      "AgentToolArgsRequest": {
+        "type": "object",
+        "properties": {
+          "tool": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "args": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "schema": {
+            "type": "object",
+            "properties": {
+              "fields": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "string",
+                        "number",
+                        "integer",
+                        "boolean",
+                        "array",
+                        "object"
+                      ]
+                    },
+                    "required": {
+                      "type": "boolean"
+                    },
+                    "nullable": {
+                      "type": "boolean"
+                    },
+                    "enum": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ]
+                      }
+                    },
+                    "min": {
+                      "type": "number"
+                    },
+                    "max": {
+                      "type": "number"
+                    },
+                    "minLength": {
+                      "type": "number"
+                    },
+                    "maxLength": {
+                      "type": "number"
+                    },
+                    "pattern": {
+                      "type": "string"
+                    },
+                    "unit": {
+                      "type": "string",
+                      "enum": [
+                        "usd",
+                        "cents",
+                        "percent",
+                        "bps"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              },
+              "allowUnknown": {
+                "type": "boolean"
+              },
+              "rules": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "op": {
+                      "type": "string",
+                      "enum": [
+                        "lte",
+                        "gte",
+                        "lt",
+                        "gt",
+                        "eq",
+                        "neq"
+                      ]
+                    },
+                    "left": {
+                      "type": "string"
+                    },
+                    "right": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "const": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "const"
+                          ]
+                        }
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "left",
+                    "right"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "fields"
+            ]
+          },
+          "policy": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "block",
+                  "flag",
+                  "audit"
+                ]
+              },
+              "blockSeverityAtOrAbove": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "args",
+          "schema"
+        ]
+      },
+      "AgentToolArgsResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "violations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "rule": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "message": {
+                  "type": "string"
+                },
+                "expected": {},
+                "actual": {}
+              },
+              "required": [
+                "path",
+                "rule",
+                "severity",
+                "message"
+              ]
+            }
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "low": {
+                "type": "integer"
+              },
+              "medium": {
+                "type": "integer"
+              },
+              "high": {
+                "type": "integer"
+              },
+              "critical": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "certificate": {
+            "type": "string",
+            "description": "Tamper-evident SHA-256 certificate.",
+            "example": "sha256:5bbf2510c504a1c1"
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          }
+        },
+        "required": [
+          "verdict",
+          "violations",
+          "counts",
+          "certificate",
+          "latencyMs"
+        ]
+      },
+      "InfraPlanRiskRequest": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "terraform",
+              "iam",
+              "k8s"
+            ]
+          },
+          "document": {},
+          "policy": {
+            "type": "object",
+            "properties": {
+              "blockSeverityAtOrAbove": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "format"
+        ]
+      },
+      "InfraPlanRiskResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ruleId": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "resource": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "framework": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "ruleId",
+                "severity",
+                "resource",
+                "message"
+              ]
+            }
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "low": {
+                "type": "integer"
+              },
+              "medium": {
+                "type": "integer"
+              },
+              "high": {
+                "type": "integer"
+              },
+              "critical": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "certificate": {
+            "type": "string",
+            "description": "Tamper-evident SHA-256 certificate.",
+            "example": "sha256:5bbf2510c504a1c1"
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          }
+        },
+        "required": [
+          "verdict",
+          "findings",
+          "counts",
+          "certificate",
+          "latencyMs"
+        ]
+      },
+      "LegalCiteRequest": {
+        "type": "object",
+        "properties": {
+          "citation": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "maxItems": 200
+          },
+          "sourceText": {
+            "type": "string",
+            "maxLength": 200000
+          },
+          "quote": {
+            "type": "string",
+            "maxLength": 10000
+          }
+        }
+      },
+      "LegalCiteResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "raw": {
+                  "type": "string"
+                },
+                "parsed": {
+                  "type": "object",
+                  "properties": {
+                    "volume": {
+                      "type": "integer"
+                    },
+                    "reporter": {
+                      "type": "string"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "year": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "volume",
+                    "reporter",
+                    "page",
+                    "year"
+                  ]
+                },
+                "valid": {
+                  "type": "boolean"
+                },
+                "issues": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "raw",
+                "valid",
+                "issues"
+              ]
+            }
+          },
+          "quoteCheck": {
+            "type": "object",
+            "properties": {
+              "found": {
+                "type": "boolean"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "found",
+              "message"
+            ]
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "invalid": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total",
+              "invalid"
+            ]
+          },
+          "certificate": {
+            "type": "string",
+            "description": "Tamper-evident SHA-256 certificate.",
+            "example": "sha256:5bbf2510c504a1c1"
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          }
+        },
+        "required": [
+          "verdict",
+          "citations",
+          "counts",
+          "certificate",
+          "latencyMs"
+        ]
+      },
+      "LegalDeadlineRequest": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "days": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "court",
+              "calendar"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "after",
+              "before"
+            ]
+          },
+          "jurisdiction": {
+            "type": "string",
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "start",
+          "days"
+        ]
+      },
+      "LegalDeadlineResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "deadline": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "daysRequested": {
+            "type": "integer"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "court",
+              "calendar"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "after",
+              "before"
+            ]
+          },
+          "skipped": {
+            "type": "object",
+            "properties": {
+              "weekends": {
+                "type": "integer"
+              },
+              "holidays": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "weekends",
+              "holidays"
+            ]
+          },
+          "certificate": {
+            "type": "string",
+            "description": "Tamper-evident SHA-256 certificate.",
+            "example": "sha256:5bbf2510c504a1c1"
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          }
+        },
+        "required": [
+          "verdict",
+          "deadline",
+          "startDate",
+          "daysRequested",
+          "mode",
+          "direction",
+          "skipped",
+          "certificate",
+          "latencyMs"
+        ]
+      },
       "ScanSqlRequest": {
         "type": "object",
         "properties": {
@@ -160,6 +3321,371 @@
           "latencyMs"
         ]
       },
+      "ValidateIdentifierRequest": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "maxItems": 100
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "iban",
+              "aba_routing",
+              "swift_bic",
+              "credit_card",
+              "ein",
+              "vat_eu",
+              "vin",
+              "npi",
+              "ssn",
+              "eth_address",
+              "sol_address"
+            ]
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "iban",
+                "aba_routing",
+                "swift_bic",
+                "credit_card",
+                "ein",
+                "vat_eu",
+                "vin",
+                "npi",
+                "ssn",
+                "eth_address",
+                "sol_address"
+              ]
+            }
+          }
+        }
+      },
+      "ValidateIdentifierResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                },
+                "type": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "iban",
+                        "aba_routing",
+                        "swift_bic",
+                        "credit_card",
+                        "ein",
+                        "vat_eu",
+                        "vin",
+                        "npi",
+                        "ssn",
+                        "eth_address",
+                        "sol_address"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "unknown"
+                      ]
+                    }
+                  ]
+                },
+                "valid": {
+                  "type": "boolean"
+                },
+                "checksum": {
+                  "type": "string",
+                  "enum": [
+                    "pass",
+                    "fail",
+                    "not_applicable"
+                  ]
+                },
+                "normalized": {
+                  "type": "string"
+                },
+                "detail": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value",
+                "type",
+                "valid",
+                "checksum"
+              ]
+            }
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "invalid": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total",
+              "invalid"
+            ]
+          },
+          "certificate": {
+            "type": "string",
+            "description": "Tamper-evident SHA-256 certificate.",
+            "example": "sha256:5bbf2510c504a1c1"
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          }
+        },
+        "required": [
+          "verdict",
+          "results",
+          "counts",
+          "certificate",
+          "latencyMs"
+        ]
+      },
+      "ValidateSchemaRequest": {
+        "type": "object",
+        "properties": {
+          "data": {},
+          "schema": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "policy": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "block",
+                  "flag",
+                  "audit"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "schema"
+        ]
+      },
+      "ValidateSchemaResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "keyword": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "expected": {},
+                "actual": {}
+              },
+              "required": [
+                "path",
+                "keyword",
+                "message"
+              ]
+            }
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "errors": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "errors"
+            ]
+          },
+          "certificate": {
+            "type": "string",
+            "description": "Tamper-evident SHA-256 certificate.",
+            "example": "sha256:5bbf2510c504a1c1"
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          }
+        },
+        "required": [
+          "verdict",
+          "valid",
+          "errors",
+          "counts",
+          "certificate",
+          "latencyMs"
+        ]
+      },
+      "ServiceMetaResponse": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "endpoints": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "docs": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "version",
+          "description",
+          "endpoints",
+          "docs"
+        ]
+      },
+      "PricingResponse": {
+        "type": "object",
+        "properties": {
+          "wallet": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string"
+          },
+          "endpoints": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "credits": {
+                  "type": "integer"
+                },
+                "lamports": {
+                  "type": "integer"
+                },
+                "sol": {
+                  "type": "number"
+                },
+                "usdApprox": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "credits",
+                "lamports",
+                "sol",
+                "usdApprox"
+              ]
+            }
+          },
+          "conversion": {
+            "type": "object",
+            "properties": {
+              "solPerCredit": {
+                "type": "number"
+              },
+              "creditsPerSol": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "solPerCredit",
+              "creditsPerSol"
+            ]
+          },
+          "freeTier": {
+            "type": "object",
+            "properties": {
+              "calls": {
+                "type": "integer"
+              },
+              "auth": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "calls",
+              "auth"
+            ]
+          },
+          "howToPay": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "docs": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "wallet",
+          "network",
+          "endpoints",
+          "conversion",
+          "freeTier",
+          "howToPay",
+          "docs"
+        ]
+      },
       "ErrorResponse": {
         "type": "object",
         "properties": {
@@ -182,6 +3708,1340 @@
     "parameters": {}
   },
   "paths": {
+    "/v1/validate/imports": {
+      "post": {
+        "operationId": "validateImports",
+        "summary": "Validate that imports/packages in LLM-generated code are real and not hallucinated.",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "core"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateImportsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateImportsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/verify": {
+      "post": {
+        "operationId": "verify",
+        "summary": "Firewall an LLM response — verify claims, detect hallucinations, and enforce output policy.",
+        "description": "Cost: 2 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "core"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/distill": {
+      "post": {
+        "operationId": "distill",
+        "summary": "Distill a conversation message array to fit within a token budget while preserving key context.",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "core"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DistillRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistillResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scan/secrets": {
+      "post": {
+        "operationId": "scanSecrets",
+        "summary": "Scan source code for hardcoded secrets and credentials.",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "security"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanSecretsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanSecretsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scan/injection": {
+      "post": {
+        "operationId": "scanInjection",
+        "summary": "Detect prompt injection attacks in user-supplied input.",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "security"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanInjectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanInjectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tokens/count": {
+      "post": {
+        "operationId": "countTokens",
+        "summary": "Count approximate tokens for a string or chat message list before sending to an LLM.",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "security"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CountTokensRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountTokensResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scan/vulnerabilities": {
+      "post": {
+        "operationId": "scanVulnerabilities",
+        "summary": "Scan a list of package names for known vulnerabilities via OSV.",
+        "description": "Cost: 2 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "security"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanVulnerabilitiesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanVulnerabilitiesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scan/pii": {
+      "post": {
+        "operationId": "scanPii",
+        "summary": "Scan text for personally identifiable information (PII/PHI/PCI) before passing it to an LLM or storing it.",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "security"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanPiiRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanPiiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scan/command": {
+      "post": {
+        "operationId": "scanCommand",
+        "summary": "Scan a shell command for dangerous operations before execution.",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "security"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanCommandRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanCommandResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scan/url": {
+      "post": {
+        "operationId": "scanUrl",
+        "summary": "Scan a URL for SSRF risks, private-network access, and policy violations before fetching.",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "security"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanUrlRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanUrlResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/finance/units": {
+      "post": {
+        "operationId": "financeUnits",
+        "summary": "Guard against decimal-scaling errors by verifying raw on-chain amount against the token's authoritative decimals.",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "finance"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinanceUnitsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceUnitsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/finance/price": {
+      "post": {
+        "operationId": "financePrice",
+        "summary": "Cross-validate an asset price against multiple sources (CoinGecko, DexScreener, Yahoo Finance) and flag stale or hallucinated prices.",
+        "description": "Cost: 2 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "finance"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancePriceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancePriceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/finance/symbol": {
+      "post": {
+        "operationId": "financeSymbol",
+        "summary": "Resolve a ticker symbol or token to a confirmed on-chain identity, detecting ambiguous or imposter tokens.",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "finance"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinanceSymbolRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSymbolResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/finance/token/risk": {
+      "post": {
+        "operationId": "financeTokenRisk",
+        "summary": "Run a rug-pull risk assessment on a token using RugCheck — checks mint/freeze authority, LP lock, and overall rug score.",
+        "description": "Cost: 3 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "finance"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinanceTokenRiskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceTokenRiskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/finance/slippage": {
+      "post": {
+        "operationId": "financeSlippage",
+        "summary": "Check pool liquidity and estimate price impact (slippage) for a proposed trade size.",
+        "description": "Cost: 2 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "finance"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinanceSlippageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceSlippageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/finance/order/risk": {
+      "post": {
+        "operationId": "financeOrderRisk",
+        "summary": "Full pre-trade risk gate — runs rug, liquidity, price, and position checks in parallel and returns a composite verdict.",
+        "description": "Cost: 5 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "finance"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinanceOrderRiskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceOrderRiskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/finance/position/check": {
+      "post": {
+        "operationId": "financePositionCheck",
+        "summary": "Deterministic position-limit and guardian-rules gate — enforces kill switch, daily-loss cap, position size, leverage, and allowed-asset constraints.",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "finance"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancePositionCheckRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancePositionCheckResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/compliance/sanctions": {
+      "post": {
+        "operationId": "complianceSanctions",
+        "summary": "Screen one or more names against global sanctions lists.",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "regulated"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComplianceSanctionsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplianceSanctionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/health/rx-check": {
+      "post": {
+        "operationId": "healthRxCheck",
+        "summary": "Check medications for dosing errors and drug–drug interactions.",
+        "description": "Cost: 2 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "regulated"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HealthRxCheckRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthRxCheckResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agent/tool-args": {
+      "post": {
+        "operationId": "agentToolArgs",
+        "summary": "Validate AI tool call arguments against a declared schema before execution.",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "regulated"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentToolArgsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentToolArgsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/infra/plan/risk": {
+      "post": {
+        "operationId": "infraPlanRisk",
+        "summary": "Assess infrastructure plans (Terraform, IAM, Kubernetes) for security risks.",
+        "description": "Cost: 2 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "regulated"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InfraPlanRiskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfraPlanRiskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/legal/cite": {
+      "post": {
+        "operationId": "legalCite",
+        "summary": "Validate legal citations and verify quoted text appears in the source.",
+        "description": "Cost: 2 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "regulated"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegalCiteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalCiteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/legal/deadline": {
+      "post": {
+        "operationId": "legalDeadline",
+        "summary": "Compute court or calendar deadlines, skipping weekends and holidays.",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "regulated"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegalDeadlineRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalDeadlineResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/scan/sql": {
       "post": {
         "operationId": "scanSql",
@@ -229,6 +5089,174 @@
           },
           "402": {
             "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/validate/identifier": {
+      "post": {
+        "operationId": "validateIdentifier",
+        "summary": "Validate structured identifiers (IBAN, BIC, VIN, NPI, EIN, crypto addresses, etc.).",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "data"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateIdentifierRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateIdentifierResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/validate/schema": {
+      "post": {
+        "operationId": "validateSchema",
+        "summary": "Validate arbitrary JSON data against a JSON Schema draft-7 schema.",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "data"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateSchemaRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateSchemaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "operationId": "getServiceMeta",
+        "summary": "Return service name, version, description, endpoint directory, and docs URL.",
+        "tags": [
+          "meta"
+        ],
+        "responses": {
+          "200": {
+            "description": "Service metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceMetaResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pricing": {
+      "get": {
+        "operationId": "getPricing",
+        "summary": "Return per-endpoint credit costs, SOL conversion rates, free-tier limits, and payment instructions.",
+        "tags": [
+          "meta"
+        ],
+        "responses": {
+          "200": {
+            "description": "Pricing sheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found.",
             "content": {
               "application/json": {
                 "schema": {
