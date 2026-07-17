@@ -1,3 +1,5 @@
 packages:
   - "packages/*"
-  - "examples/*"
+  # examples/* are standalone, self-contained integrations (copy-and-run).
+  # They are intentionally NOT workspace members so their external deps never
+  # affect the monorepo lockfile or --frozen-lockfile CI/Docker installs.
