@@ -57,5 +57,88 @@ registerTool({
   response: ScanSqlResponse,
 });
 
-// TODO(contracts-data): add /v1/validate/identifier and /v1/validate/schema here,
-// following the scanSql pattern above.
+// ═══════════════════════════════════════════════════════════════════════════
+// POST /v1/validate/identifier
+// ═══════════════════════════════════════════════════════════════════════════
+
+const IDENTIFIER_TYPES = [
+  "iban", "aba_routing", "swift_bic", "credit_card", "ein", "vat_eu",
+  "vin", "npi", "ssn", "eth_address", "sol_address",
+] as const;
+
+export const ValidateIdentifierRequest = z
+  .object({
+    value: z.string().max(200).optional(),
+    values: z.array(z.string().max(200)).max(100).optional(),
+    type: z.enum(IDENTIFIER_TYPES).optional(),
+    types: z.array(z.enum(IDENTIFIER_TYPES)).optional(),
+  })
+  .refine((d) => d.value !== undefined || (d.values !== undefined && d.values.length > 0), {
+    message: "Provide `value` or a non-empty `values` array",
+  });
+
+const IdentifierChecksumSchema = z.enum(["pass", "fail", "not_applicable"]);
+
+const IdentifierEntrySchema = z.object({
+  value: z.string(),
+  type: z.union([z.enum(IDENTIFIER_TYPES), z.literal("unknown")]),
+  valid: z.boolean(),
+  checksum: IdentifierChecksumSchema,
+  normalized: z.string().optional(),
+  detail: z.string().optional(),
+});
+
+export const ValidateIdentifierResponse = z.object({
+  verdict: VerdictSchema,
+  results: z.array(IdentifierEntrySchema),
+  counts: z.object({ total: z.number().int(), invalid: z.number().int() }),
+  certificate: CertificateSchema,
+  latencyMs: LatencyMsSchema,
+});
+
+registerTool({
+  path: "/v1/validate/identifier",
+  operationId: "validateIdentifier",
+  summary: "Validate structured identifiers (IBAN, BIC, VIN, NPI, EIN, crypto addresses, etc.).",
+  tags: ["data"],
+  credits: 1,
+  request: ValidateIdentifierRequest,
+  response: ValidateIdentifierResponse,
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// POST /v1/validate/schema
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const ValidateSchemaRequest = z.object({
+  data: z.unknown(),
+  schema: z.record(z.unknown()),
+  policy: z.object({ mode: z.enum(["block", "flag", "audit"]).optional() }).optional(),
+});
+
+const SchemaValidationErrorSchema = z.object({
+  path: z.string(),
+  keyword: z.string(),
+  message: z.string(),
+  expected: z.unknown().optional(),
+  actual: z.unknown().optional(),
+});
+
+export const ValidateSchemaResponse = z.object({
+  verdict: VerdictSchema,
+  valid: z.boolean(),
+  errors: z.array(SchemaValidationErrorSchema),
+  counts: z.object({ errors: z.number().int() }),
+  certificate: CertificateSchema,
+  latencyMs: LatencyMsSchema,
+});
+
+registerTool({
+  path: "/v1/validate/schema",
+  operationId: "validateSchema",
+  summary: "Validate arbitrary JSON data against a JSON Schema draft-7 schema.",
+  tags: ["data"],
+  credits: 1,
+  request: ValidateSchemaRequest,
+  response: ValidateSchemaResponse,
+});
