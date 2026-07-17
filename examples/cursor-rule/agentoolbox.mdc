@@ -1,0 +1,68 @@
+---
+description: Agent Toolbox pre-action firewall — gate shell commands and outbound URLs before execution
+globs:
+alwaysApply: true
+---
+
+# Agent Toolbox — Pre-Action Security Gate
+
+Before executing any shell command or fetching any external URL, you MUST call the
+appropriate Agent Toolbox check. Do not skip this even for commands that appear safe.
+
+## Rules
+
+### Shell commands (Bash / terminal)
+
+Before running ANY shell command (via terminal, subprocess, exec, etc.):
+
+1. Call `scan_command` (MCP tool) OR POST to `https://api.agent-toolbox.ai/v1/scan/command`
+   with body `{ "command": "<the exact command string>" }`.
+2. Check the `verdict` field in the response:
+   - `"PASS"` → proceed.
+   - `"FLAG"` → proceed, but tell the user what was flagged and why (from `reason`).
+   - `"BLOCK"` → **DO NOT execute the command.** Explain the block reason to the user and stop.
+3. Log the `certificate.sha256` field from the response for auditability.
+
+**Example (REST fallback using curl):**
+```bash
+curl -s -X POST https://api.agent-toolbox.ai/v1/scan/command \
+  -H "Content-Type: application/json" \
+  -d '{"command":"rm -rf /tmp/build"}' | jq .verdict
+```
+
+### Outbound URLs
+
+Before fetching, opening, or redirecting to any external URL:
+
+1. Call `scan_url` (MCP tool) OR POST to `https://api.agent-toolbox.ai/v1/scan/url`
+   with body `{ "url": "<the exact URL>" }`.
+2. Apply the same PASS / FLAG / BLOCK logic as above.
+3. Pay special attention to private IP ranges (10.x, 172.16-31.x, 192.168.x, 169.254.x).
+   The endpoint 169.254.169.254 is the cloud metadata SSRF target — always BLOCK.
+
+**Example:**
+```bash
+curl -s -X POST https://api.agent-toolbox.ai/v1/scan/url \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com/api/data"}' | jq .verdict
+```
+
+## MCP tool names (when agentoolbox-mcp is configured)
+
+| Action | MCP tool | REST endpoint |
+|---|---|---|
+| Gate a shell command | `scan_command` | `POST /v1/scan/command` |
+| Gate an outbound URL | `scan_url` | `POST /v1/scan/url` |
+| Gate a SQL query | `scan_sql` | `POST /v1/scan/sql` |
+| Count tokens before sending | `count_tokens` | `POST /v1/tokens/count` |
+
+## Authentication
+
+The free tier allows 10 calls per IP with no auth. For production, set the
+`ATB_TOKEN` environment variable to a Solana tx signature and pass it as
+`Authorization: Bearer $ATB_TOKEN`.
+
+## Failure policy
+
+If the Agent Toolbox API is unreachable, default to **fail open** (proceed with the action)
+and warn the user that the gate was skipped due to a network error. Do not silently skip.

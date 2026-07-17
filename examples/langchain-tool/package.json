@@ -1,0 +1,22 @@
+{
+  "name": "agentoolbox-langchain-example",
+  "version": "0.1.0",
+  "description": "Agent Toolbox pre-action gates as LangChain tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "example": "tsx example-agent.ts"
+  },
+  "dependencies": {
+    "@langchain/core": "^0.3.0",
+    "langchain": "^0.3.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
