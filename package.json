@@ -6,6 +6,7 @@
   "homepage": "https://agent-toolbox.ai",
   "scripts": {
     "build": "pnpm -r build",
+    "gen:openapi": "pnpm --filter @agentoolbox/contracts generate",
     "test": "pnpm -r test",
     "test:api": "vitest run tests/api-integration.test.ts",
     "dev": "pnpm --filter api dev",

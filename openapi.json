@@ -1,0 +1,245 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "agent-toolbox.ai API",
+    "version": "0.1.0",
+    "description": "The quality layer for AI agents — deterministic, offline pre-action gates. Each tool returns a PASS/FLAG/BLOCK verdict plus a tamper-evident SHA-256 certificate."
+  },
+  "servers": [
+    {
+      "url": "https://api.agent-toolbox.ai",
+      "description": "Production"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "A Solana transaction signature or API key as a Bearer token. Omit entirely to use the free tier (10 calls per IP, no auth)."
+      }
+    },
+    "schemas": {
+      "ScanSqlRequest": {
+        "type": "object",
+        "properties": {
+          "sql": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200000
+          },
+          "dialect": {
+            "type": "string",
+            "enum": [
+              "postgres",
+              "mysql",
+              "sqlite",
+              "tsql",
+              "generic"
+            ]
+          },
+          "policy": {
+            "type": "object",
+            "properties": {
+              "allowDdl": {
+                "type": "boolean"
+              },
+              "allowUnboundedWrites": {
+                "type": "boolean"
+              },
+              "maxStatements": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000
+              },
+              "blockSeverityAtOrAbove": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "sql"
+        ]
+      },
+      "ScanSqlResponse": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FLAG",
+              "BLOCK"
+            ]
+          },
+          "statements": {
+            "type": "integer"
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ruleId": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "statementIndex": {
+                  "type": "integer"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "snippet": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "ruleId",
+                "severity",
+                "statementIndex",
+                "message",
+                "snippet"
+              ]
+            }
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "low": {
+                "type": "integer"
+              },
+              "medium": {
+                "type": "integer"
+              },
+              "high": {
+                "type": "integer"
+              },
+              "critical": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "certificate": {
+            "type": "string",
+            "description": "Tamper-evident SHA-256 certificate.",
+            "example": "sha256:5bbf2510c504a1c1"
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Server compute time in ms."
+          }
+        },
+        "required": [
+          "verdict",
+          "statements",
+          "findings",
+          "counts",
+          "certificate",
+          "latencyMs"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "docs": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "message"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/v1/scan/sql": {
+      "post": {
+        "operationId": "scanSql",
+        "summary": "Scan SQL for destructive / injection-prone statements before execution.",
+        "description": "Cost: 1 credit(s). Free tier: 10 calls per IP (no auth).",
+        "tags": [
+          "data"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanSqlRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanSqlResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Free tier exhausted or insufficient credits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}
