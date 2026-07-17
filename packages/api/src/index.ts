@@ -6,6 +6,7 @@ import { prettyJSON } from "hono/pretty-json";
 import { paymentMiddleware, getLedgerStats } from "./middleware/payment.js";
 import { v1 } from "./routes.js";
 import { financeRoutes } from "./finance-routes.js";
+import { billingRoutes } from "./billing-routes.js";
 import { adminAuth } from "./admin/middleware.js";
 import { admin } from "./admin/routes.js";
 import { appendLog } from "./admin/logger.js";
@@ -127,6 +128,9 @@ app.get("/stats", async (c) => c.json(await getLedgerStats()));
 // ── Admin routes (behind admin-key middleware) ────────────────────────────────
 app.use("/admin/*", adminAuth);
 app.route("/admin", admin);
+
+// ── Billing routes (Stripe card path — env-guarded, outside paymentMiddleware) ─
+app.route("/billing", billingRoutes);
 
 // ── v1 routes (behind payment middleware) ─────────────────────────────────────
 app.use("/v1/*", paymentMiddleware);
