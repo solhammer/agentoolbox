@@ -78,13 +78,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build workspace libraries (bundled into the MCP server)
-        run: |
-          pnpm --filter @agentoolbox/validator build
-          pnpm --filter @agentoolbox/firewall build
-          pnpm --filter @agentoolbox/payments build
-          pnpm --filter @agentoolbox/core build
-          pnpm --filter @agentoolbox/privacy build
-          pnpm --filter @agentoolbox/finance build
+        # Build ALL @agentoolbox/* libraries in topological order so tsup can
+        # resolve every workspace import the server bundles. A glob keeps this
+        # from going stale as new tool packages are added (cmdguard, netguard, etc.).
+        run: pnpm --filter "@agentoolbox/*" build
 
       - name: Build MCP bundle
         run: pnpm --filter agentoolbox-mcp build
