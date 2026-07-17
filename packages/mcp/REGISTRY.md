@@ -4,8 +4,8 @@ The [MCP Registry](https://registry.modelcontextprotocol.io) hosts metadata for 
 
 ## Prerequisites
 
-1. The npm package `agentoolbox-mcp` must already be published at the matching version (`0.1.3` or whatever version is in `server.json`).  
-   Version in `packages/mcp/package.json`, `packages/mcp/server.json`, and the npm publish must all match.
+1. The npm package `agentoolbox-mcp` must already be published at the matching version (`0.1.4` or whatever version is in `server.json`).  
+   Version in `packages/mcp/package.json`, the repo-root `server.json`, and the npm publish must all match.
 2. `package.json` must contain `"mcpName": "io.github.solhammer/agent-toolbox"` — this is how the registry verifies npm package ownership.  
    `mcpName` **must** exactly match the `name` field in `server.json`.
 3. A GitHub account with access to the `solhammer` organization (the registry uses `io.github.solhammer/*` namespace via GitHub OAuth).
@@ -29,9 +29,9 @@ From the repo root or `packages/mcp/`:
 mcp-publisher login github
 #   → opens device-flow URL; paste the printed code at https://github.com/login/device
 
-# 2. Publish server.json to the registry
+# 2. Publish server.json to the registry (run from the repo root, which holds server.json)
 mcp-publisher publish
-#   → reads packages/mcp/server.json and pushes metadata to registry.modelcontextprotocol.io
+#   → reads the repo-root server.json and pushes metadata to registry.modelcontextprotocol.io
 ```
 
 Run `mcp-publisher publish` from the directory that contains `server.json`, or pass the path explicitly.
