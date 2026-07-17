@@ -410,6 +410,10 @@ importers:
         version: 2.1.9(@types/node@22.20.1)
 
   packages/sdk:
+    dependencies:
+      '@agentoolbox/contracts':
+        specifier: workspace:*
+        version: link:../contracts
     devDependencies:
       typescript:
         specifier: ^5.5.0
