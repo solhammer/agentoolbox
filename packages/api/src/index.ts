@@ -3,6 +3,7 @@ import type { MiddlewareHandler } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
+import { getOpenApiDocument } from "@agentoolbox/contracts";
 import { paymentMiddleware, getLedgerStats } from "./middleware/payment.js";
 import { v1 } from "./routes.js";
 import { financeRoutes } from "./finance-routes.js";
@@ -121,6 +122,8 @@ app.get("/", (c) =>
 app.get("/health", (c) =>
   c.json({ status: "ok", timestamp: new Date().toISOString() })
 );
+
+app.get("/openapi.json", (c) => c.json(getOpenApiDocument()));
 
 app.get("/stats", async (c) => c.json(await getLedgerStats()));
 

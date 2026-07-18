@@ -21,6 +21,7 @@ COPY packages/sqlguard/package.json ./packages/sqlguard/
 COPY packages/cmdguard/package.json ./packages/cmdguard/
 COPY packages/netguard/package.json ./packages/netguard/
 COPY packages/finance/package.json ./packages/finance/
+COPY packages/contracts/package.json ./packages/contracts/
 COPY packages/api/package.json ./packages/api/
 
 # Install all dependencies
@@ -59,6 +60,8 @@ COPY packages/netguard/src ./packages/netguard/src
 COPY packages/netguard/tsconfig.json ./packages/netguard/
 COPY packages/finance/src ./packages/finance/src
 COPY packages/finance/tsconfig.json ./packages/finance/
+COPY packages/contracts/src ./packages/contracts/src
+COPY packages/contracts/tsconfig.json ./packages/contracts/
 COPY packages/api/src ./packages/api/src
 COPY packages/api/tsconfig.json ./packages/api/
 
@@ -79,6 +82,7 @@ RUN pnpm --filter @agentoolbox/sqlguard build
 RUN pnpm --filter @agentoolbox/cmdguard build
 RUN pnpm --filter @agentoolbox/netguard build
 RUN pnpm --filter @agentoolbox/finance build
+RUN pnpm --filter @agentoolbox/contracts build
 RUN pnpm --filter @agentoolbox/api build
 
 EXPOSE 3000

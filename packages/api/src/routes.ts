@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { validateImports } from "@agentoolbox/validator";
 import { runFirewall } from "@agentoolbox/firewall";
@@ -27,6 +26,24 @@ import {
   VerifySchema,
   DistillSchema,
 } from "./schemas.js";
+import {
+  CountTokensRequest,
+  ScanVulnerabilitiesRequest,
+  ScanSecretsRequest,
+  ScanInjectionRequest,
+  ScanPiiRequest,
+  ComplianceSanctionsRequest,
+  HealthRxCheckRequest,
+  AgentToolArgsRequest,
+  InfraPlanRiskRequest,
+  LegalCiteRequest,
+  LegalDeadlineRequest,
+  ValidateIdentifierRequest,
+  ValidateSchemaRequest,
+  ScanSqlRequest,
+  ScanCommandRequest,
+  ScanUrlRequest,
+} from "@agentoolbox/contracts";
 
 const v1 = new Hono();
 
@@ -76,23 +93,7 @@ v1.post(
 // ── POST /v1/tokens/count ─────────────────────────────────────────────────────
 v1.post(
   "/tokens/count",
-  zValidator(
-    "json",
-    z
-      .object({
-        text: z.string().max(500_000).optional(),
-        messages: z
-          .array(z.object({ role: z.string(), content: z.string() }))
-          .optional(),
-        model: z
-          .enum(["gpt-4", "gpt-3.5", "claude", "gemini", "generic"])
-          .optional()
-          .default("generic"),
-      })
-      .refine((d) => d.text || d.messages, {
-        message: "Provide either text or messages",
-      })
-  ),
+  zValidator("json", CountTokensRequest),
   (c) => {
     const { text, messages, model } = c.req.valid("json");
     if (messages) {
@@ -105,14 +106,7 @@ v1.post(
 // ── POST /v1/scan/vulnerabilities ─────────────────────────────────────────────
 v1.post(
   "/scan/vulnerabilities",
-  zValidator(
-    "json",
-    z.object({
-      packages: z.array(z.string()).min(1).max(50),
-      language: z.enum(["python", "javascript", "typescript", "rust", "go"]),
-      timeoutMs: z.number().optional(),
-    })
-  ),
+  zValidator("json", ScanVulnerabilitiesRequest),
   async (c) => {
     const { packages, language, timeoutMs } = c.req.valid("json");
     const result = await scanVulnerabilities(packages, language, timeoutMs);
@@ -160,10 +154,7 @@ v1.get("/pricing", (c) => {
 // ── POST /v1/scan/secrets ─────────────────────────────────────────────────────
 v1.post(
   "/scan/secrets",
-  zValidator("json", z.object({
-    code: z.string().min(1).max(200_000),
-    filename: z.string().optional(),
-  })),
+  zValidator("json", ScanSecretsRequest),
   async (c) => {
     const { code, filename } = c.req.valid("json");
     const findings = scanSecrets(code);
@@ -181,10 +172,7 @@ v1.post(
 // ── POST /v1/scan/injection ───────────────────────────────────────────────────
 v1.post(
   "/scan/injection",
-  zValidator("json", z.object({
-    input: z.string().min(1).max(50_000),
-    context: z.string().optional(),
-  })),
+  zValidator("json", ScanInjectionRequest),
   async (c) => {
     const { input, context } = c.req.valid("json");
     const result = detectPromptInjection(input);
@@ -195,22 +183,7 @@ v1.post(
 // ── POST /v1/scan/pii ─────────────────────────────────────────────────────────
 v1.post(
   "/scan/pii",
-  zValidator(
-    "json",
-    z.object({
-      text: z.string().min(1).max(200_000),
-      filename: z.string().optional(),
-      policy: z
-        .object({
-          mode: z.enum(["block", "flag", "audit"]).optional(),
-          blockSeverityAtOrAbove: z.enum(["low", "medium", "high", "critical"]).optional(),
-          allowTypes: z.array(z.string()).optional(),
-          jurisdictions: z.array(z.string()).optional(),
-          redact: z.boolean().optional(),
-        })
-        .optional(),
-    })
-  ),
+  zValidator("json", ScanPiiRequest),
   (c) => {
     const b = c.req.valid("json");
     const p = b.policy;
@@ -238,23 +211,7 @@ v1.post(
 // ── POST /v1/compliance/sanctions ─────────────────────────────────────────────
 v1.post(
   "/compliance/sanctions",
-  zValidator(
-    "json",
-    z
-      .object({
-        name: z.string().min(1).max(512).optional(),
-        names: z.array(z.string().min(1).max(512)).max(100).optional(),
-        minScore: z.number().min(0).max(1).optional(),
-        lists: z.array(z.string()).max(50).optional(),
-        entityTypes: z
-          .array(z.enum(["individual", "entity", "vessel", "aircraft", "unknown"]))
-          .optional(),
-        fuzzy: z.boolean().optional(),
-      })
-      .refine((d) => d.name !== undefined || (d.names !== undefined && d.names.length > 0), {
-        message: "Provide `name` or a non-empty `names` array",
-      })
-  ),
+  zValidator("json", ComplianceSanctionsRequest),
   (c) => {
     const b = c.req.valid("json");
     const result = screenSanctions({
@@ -272,36 +229,7 @@ v1.post(
 // ── POST /v1/health/rx-check ──────────────────────────────────────────────────
 v1.post(
   "/health/rx-check",
-  zValidator(
-    "json",
-    z.object({
-      medications: z
-        .array(
-          z.object({
-            name: z.string().min(1).max(200),
-            dose: z.number().nonnegative().optional(),
-            unit: z.string().max(20).optional(),
-            route: z.string().max(40).optional(),
-            frequencyPerDay: z.number().positive().max(100).optional(),
-          })
-        )
-        .min(1)
-        .max(50),
-      patient: z
-        .object({
-          weightKg: z.number().positive().max(1000).optional(),
-          ageYears: z.number().nonnegative().max(150).optional(),
-        })
-        .optional(),
-      policy: z
-        .object({
-          blockSeverityAtOrAbove: z
-            .enum(["moderate", "major", "contraindicated"])
-            .optional(),
-        })
-        .optional(),
-    })
-  ),
+  zValidator("json", HealthRxCheckRequest),
   (c) => {
     const b = c.req.valid("json");
     const result = rxCheck({
@@ -335,44 +263,9 @@ v1.post(
 );
 
 // ── POST /v1/agent/tool-args ───────────────────────────────────────────────────
-const FieldSpecSchema = z.object({
-  type: z.enum(["string", "number", "integer", "boolean", "array", "object"]),
-  required: z.boolean().optional(),
-  nullable: z.boolean().optional(),
-  enum: z.array(z.union([z.string(), z.number()])).optional(),
-  min: z.number().optional(),
-  max: z.number().optional(),
-  minLength: z.number().optional(),
-  maxLength: z.number().optional(),
-  pattern: z.string().optional(),
-  unit: z.enum(["usd", "cents", "percent", "bps"]).optional(),
-});
-const CrossFieldRuleSchema = z.object({
-  op: z.enum(["lte", "gte", "lt", "gt", "eq", "neq"]),
-  left: z.string(),
-  right: z.union([z.string(), z.object({ const: z.union([z.number(), z.string()]) })]),
-  message: z.string().optional(),
-});
 v1.post(
   "/agent/tool-args",
-  zValidator(
-    "json",
-    z.object({
-      tool: z.string().max(200).optional(),
-      args: z.record(z.unknown()),
-      schema: z.object({
-        fields: z.record(FieldSpecSchema),
-        allowUnknown: z.boolean().optional(),
-        rules: z.array(CrossFieldRuleSchema).optional(),
-      }),
-      policy: z
-        .object({
-          mode: z.enum(["block", "flag", "audit"]).optional(),
-          blockSeverityAtOrAbove: z.enum(["low", "medium", "high", "critical"]).optional(),
-        })
-        .optional(),
-    })
-  ),
+  zValidator("json", AgentToolArgsRequest),
   (c) => {
     const b = c.req.valid("json");
     const result = checkToolArgs(b as unknown as Parameters<typeof checkToolArgs>[0]);
@@ -383,18 +276,7 @@ v1.post(
 // ── POST /v1/infra/plan/risk ─────────────────────────────────────────────────
 v1.post(
   "/infra/plan/risk",
-  zValidator(
-    "json",
-    z.object({
-      format: z.enum(["terraform", "iam", "k8s"]),
-      document: z.unknown(),
-      policy: z
-        .object({
-          blockSeverityAtOrAbove: z.enum(["low", "medium", "high", "critical"]).optional(),
-        })
-        .optional(),
-    })
-  ),
+  zValidator("json", InfraPlanRiskRequest),
   (c) => {
     const b = c.req.valid("json");
     const result = checkInfraPlan(b as unknown as Parameters<typeof checkInfraPlan>[0]);
@@ -405,19 +287,7 @@ v1.post(
 // ── POST /v1/legal/cite ─────────────────────────────────────────────────────
 v1.post(
   "/legal/cite",
-  zValidator(
-    "json",
-    z
-      .object({
-        citation: z.string().max(500).optional(),
-        citations: z.array(z.string().max(500)).max(200).optional(),
-        sourceText: z.string().max(200_000).optional(),
-        quote: z.string().max(10_000).optional(),
-      })
-      .refine((d) => d.citation !== undefined || (d.citations !== undefined && d.citations.length > 0), {
-        message: "Provide `citation` or a non-empty `citations` array",
-      })
-  ),
+  zValidator("json", LegalCiteRequest),
   (c) => {
     const b = c.req.valid("json");
     const result = checkCitation(b as unknown as Parameters<typeof checkCitation>[0]);
@@ -428,16 +298,7 @@ v1.post(
 // ── POST /v1/legal/deadline ────────────────────────────────────────────────
 v1.post(
   "/legal/deadline",
-  zValidator(
-    "json",
-    z.object({
-      start: z.string().min(1).max(40),
-      days: z.number().int().min(0).max(100_000),
-      mode: z.enum(["court", "calendar"]).optional(),
-      direction: z.enum(["after", "before"]).optional(),
-      jurisdiction: z.string().max(80).optional(),
-    })
-  ),
+  zValidator("json", LegalDeadlineRequest),
   (c) => {
     const b = c.req.valid("json");
     const result = computeDeadline(b as unknown as Parameters<typeof computeDeadline>[0]);
@@ -445,26 +306,10 @@ v1.post(
   }
 );
 
-// ── POST /v1/validate/identifier ──────────────────────────────────────────
-const IDENTIFIER_TYPES = [
-  "iban", "aba_routing", "swift_bic", "credit_card", "ein", "vat_eu",
-  "vin", "npi", "ssn", "eth_address", "sol_address",
-] as const;
+// ── POST /v1/validate/identifier ──────────────────────────────────────────────
 v1.post(
   "/validate/identifier",
-  zValidator(
-    "json",
-    z
-      .object({
-        value: z.string().max(200).optional(),
-        values: z.array(z.string().max(200)).max(100).optional(),
-        type: z.enum(IDENTIFIER_TYPES).optional(),
-        types: z.array(z.enum(IDENTIFIER_TYPES)).optional(),
-      })
-      .refine((d) => d.value !== undefined || (d.values !== undefined && d.values.length > 0), {
-        message: "Provide `value` or a non-empty `values` array",
-      })
-  ),
+  zValidator("json", ValidateIdentifierRequest),
   (c) => {
     const b = c.req.valid("json");
     const result = validateIdentifier(b as unknown as Parameters<typeof validateIdentifier>[0]);
@@ -475,14 +320,7 @@ v1.post(
 // ── POST /v1/validate/schema ────────────────────────────────────────────
 v1.post(
   "/validate/schema",
-  zValidator(
-    "json",
-    z.object({
-      data: z.unknown(),
-      schema: z.record(z.unknown()),
-      policy: z.object({ mode: z.enum(["block", "flag", "audit"]).optional() }).optional(),
-    })
-  ),
+  zValidator("json", ValidateSchemaRequest),
   (c) => {
     const b = c.req.valid("json");
     const result = validateSchema(b as unknown as Parameters<typeof validateSchema>[0]);
@@ -493,21 +331,7 @@ v1.post(
 // ── POST /v1/scan/sql ───────────────────────────────────────────────
 v1.post(
   "/scan/sql",
-  zValidator(
-    "json",
-    z.object({
-      sql: z.string().min(1).max(200_000),
-      dialect: z.enum(["postgres", "mysql", "sqlite", "tsql", "generic"]).optional(),
-      policy: z
-        .object({
-          allowDdl: z.boolean().optional(),
-          allowUnboundedWrites: z.boolean().optional(),
-          maxStatements: z.number().int().min(1).max(1000).optional(),
-          blockSeverityAtOrAbove: z.enum(["low", "medium", "high", "critical"]).optional(),
-        })
-        .optional(),
-    })
-  ),
+  zValidator("json", ScanSqlRequest),
   (c) => {
     const b = c.req.valid("json");
     const result = scanSql(b as unknown as Parameters<typeof scanSql>[0]);
@@ -518,21 +342,7 @@ v1.post(
 // ── POST /v1/scan/command ───────────────────────────────────────────
 v1.post(
   "/scan/command",
-  zValidator(
-    "json",
-    z.object({
-      command: z.string().min(1).max(200_000),
-      shell: z.enum(["bash", "sh", "zsh", "powershell", "generic"]).optional(),
-      policy: z
-        .object({
-          blockSeverityAtOrAbove: z.enum(["low", "medium", "high", "critical"]).optional(),
-          allow: z.array(z.string()).max(100).optional(),
-          protectedRefs: z.array(z.string()).max(100).optional(),
-          maxSegments: z.number().int().min(1).max(1000).optional(),
-        })
-        .optional(),
-    })
-  ),
+  zValidator("json", ScanCommandRequest),
   (c) => {
     const b = c.req.valid("json");
     const result = scanCommand(b as unknown as Parameters<typeof scanCommand>[0]);
@@ -543,23 +353,7 @@ v1.post(
 // ── POST /v1/scan/url ───────────────────────────────────────────────
 v1.post(
   "/scan/url",
-  zValidator(
-    "json",
-    z.object({
-      url: z.string().min(1).max(8_192),
-      policy: z
-        .object({
-          allowSchemes: z.array(z.string()).max(20).optional(),
-          allowHosts: z.array(z.string()).max(200).optional(),
-          denyHosts: z.array(z.string()).max(200).optional(),
-          denyPrivate: z.boolean().optional(),
-          allowedPorts: z.array(z.number().int().min(0).max(65535)).max(50).optional(),
-          resolve: z.boolean().optional(),
-          blockSeverityAtOrAbove: z.enum(["low", "medium", "high", "critical"]).optional(),
-        })
-        .optional(),
-    })
-  ),
+  zValidator("json", ScanUrlRequest),
   async (c) => {
     const b = c.req.valid("json");
     const result = await scanUrl(b as unknown as Parameters<typeof scanUrl>[0]);

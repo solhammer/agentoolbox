@@ -41,6 +41,7 @@ jobs:
           pnpm --filter @agentoolbox/cmdguard build
           pnpm --filter @agentoolbox/netguard build
           pnpm --filter @agentoolbox/finance build
+          pnpm --filter @agentoolbox/contracts build
 
       - name: Run tests
         run: pnpm test
@@ -62,6 +63,7 @@ jobs:
           pnpm --filter @agentoolbox/cmdguard typecheck
           pnpm --filter @agentoolbox/netguard typecheck
           pnpm --filter @agentoolbox/finance typecheck
+          pnpm --filter @agentoolbox/contracts typecheck
           pnpm --filter agent-toolbox-sdk typecheck
           pnpm --filter @agentoolbox/api typecheck
           pnpm --filter agentoolbox-mcp typecheck

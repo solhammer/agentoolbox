@@ -13,6 +13,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@agentoolbox/contracts": "workspace:*",
     "@agentoolbox/agent": "workspace:*",
     "@agentoolbox/cmdguard": "workspace:*",
     "@agentoolbox/compliance": "workspace:*",

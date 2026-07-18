@@ -87,6 +87,9 @@ importers:
       '@agentoolbox/compliance':
         specifier: workspace:*
         version: link:../compliance
+      '@agentoolbox/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       '@agentoolbox/core':
         specifier: workspace:*
         version: link:../core
