@@ -43,6 +43,11 @@ jobs:
           pnpm --filter @agentoolbox/finance build
           pnpm --filter @agentoolbox/contracts build
 
+      - name: OpenAPI spec is in sync with contracts
+        run: |
+          pnpm gen:openapi
+          git diff --exit-code openapi.json || { echo "::error::openapi.json is stale — run 'pnpm gen:openapi' and commit the result."; exit 1; }
+
       - name: Run tests
         run: pnpm test
 
