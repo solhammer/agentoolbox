@@ -9,10 +9,10 @@ LLM-based guardrails on every decision.
 ## Installation
 
 ```bash
-pip install agent-toolbox
+pip install agent-toolbox.ai
 ```
 
-Requires Python ≥ 3.10, `httpx`, and `pydantic` v2.
+Requires Python ≥ 3.10, `httpx`, and `pydantic` v2. The PyPI distribution is **`agent-toolbox.ai`**; the import module is **`agent_toolbox`**.
 
 ## Free tier
 
@@ -101,8 +101,8 @@ tb = Toolbox(api_key=os.environ["TOOLBOX_API_KEY"])
 | `finance_order_risk` | `/v1/finance/order/risk` | Composite order risk |
 | `finance_position_check` | `/v1/finance/position/check` | Portfolio risk rules |
 | `compliance_sanctions` | `/v1/compliance/sanctions` | OFAC / UN / EU screening |
-| `health_rx_check` | `/v1/health/rx/check` | Drug interaction checker |
-| `agent_tool_args` | `/v1/agent/tool/args` | Tool argument validator |
+| `health_rx_check` | `/v1/health/rx-check` | Drug interaction checker |
+| `agent_tool_args` | `/v1/agent/tool-args` | Tool argument validator |
 | `infra_plan_risk` | `/v1/infra/plan/risk` | Terraform / IAM / k8s scan |
 | `legal_cite` | `/v1/legal/cite` | Legal citation validator |
 | `legal_deadline` | `/v1/legal/deadline` | Court deadline calculator |
