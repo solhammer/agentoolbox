@@ -1,0 +1,46 @@
+name: Publish Python SDK to PyPI
+
+# Publishes the `agent-toolbox` Python SDK (in python/) to PyPI via
+# Trusted Publishing (OIDC) — no stored API token.
+#
+# ONE-TIME PyPI SETUP (required before the first successful run):
+#   On https://pypi.org, add a "pending publisher" for the project
+#   `agent-toolbox` with:
+#     Owner:            solhammer
+#     Repository:       agentoolbox
+#     Workflow name:    publish-pypi.yml
+#     Environment:      (leave blank)
+#   (Or, for token-based publishing instead, add a PYPI_API_TOKEN repo secret
+#   and pass it to the publish step with `password: ${{ secrets.PYPI_API_TOKEN }}`.)
+#
+# Trigger: push a tag like `py-v0.1.0` (or run manually via workflow_dispatch).
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "py-v*"
+
+jobs:
+  publish:
+    name: Build & publish agent-toolbox
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC token for PyPI Trusted Publishing
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build sdist + wheel
+        working-directory: python
+        run: |
+          python -m pip install --upgrade build
+          python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: python/dist

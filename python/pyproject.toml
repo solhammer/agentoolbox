@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-toolbox"
@@ -37,9 +37,9 @@ dev = [
 
 [project.urls]
 Homepage = "https://agent-toolbox.ai"
-Documentation = "https://docs.agent-toolbox.ai"
-Repository = "https://github.com/agentoolbox/sdk-python"
-"Bug Tracker" = "https://github.com/agentoolbox/sdk-python/issues"
+Documentation = "https://agent-toolbox.ai/docs"
+Repository = "https://github.com/solhammer/agentoolbox"
+"Bug Tracker" = "https://github.com/solhammer/agentoolbox/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
