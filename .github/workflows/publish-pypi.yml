@@ -5,7 +5,7 @@ name: Publish Python SDK to PyPI
 #
 # ONE-TIME PyPI SETUP (required before the first successful run):
 #   On https://pypi.org, add a "pending publisher" for the project
-#   `agent-toolbox` with:
+#   `agent-toolbox.ai` with:
 #     Owner:            solhammer
 #     Repository:       agentoolbox
 #     Workflow name:    publish-pypi.yml
