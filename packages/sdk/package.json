@@ -44,6 +44,9 @@
   "bugs": {
     "url": "https://github.com/solhammer/agentoolbox/issues"
   },
+  "dependencies": {
+    "@agentoolbox/contracts": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "^5.5.0"
   }
