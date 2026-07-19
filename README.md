@@ -1,6 +1,6 @@
 # agent-toolbox.ai
 
-The quality layer for AI agents. Seven API services that verify, secure, and improve LLM outputs — callable by any agent, paid autonomously in SOL.
+The quality layer for AI agents. 26 deterministic, offline pre-action gates across 6 suites — verify, secure, and validate agent actions before they happen — callable by any agent, paid autonomously in SOL.
 
 **API:** `https://api.agent-toolbox.ai`  
 **Website:** [agent-toolbox.ai](https://agent-toolbox.ai)  
@@ -18,6 +18,7 @@ The quality layer for AI agents. Seven API services that verify, secure, and imp
 - [MCP integration](#mcp-integration)
 - [TypeScript SDK](#typescript-sdk)
 - [Self-hosting](#self-hosting)
+- [Roadmap](#roadmap)
 
 ---
 
@@ -44,23 +45,65 @@ curl -X POST https://api.agent-toolbox.ai/v1/verify \
 
 ## Service overview
 
+26 tools across 6 suites. Every verdict is deterministic and offline (unless a tool documents an opt-in networked mode). Call `GET /v1/pricing` (free) to self-discover the wallet and per-endpoint rates. Full request/response schemas live in [`openapi.json`](openapi.json) (served at `GET /openapi.json`) and on [agent-toolbox.ai](https://agent-toolbox.ai); see the [roadmap](docs/ROADMAP.md) for what's shipped and planned.
+
+**1 SOL = 10,000 credits** · Free tier: 10 calls/IP, no auth.
+
+### Core quality
 | Endpoint | Purpose | Credits | Latency |
 |---|---|---|---|
-| `GET /v1/pricing` | Discover wallet + rates | free | <50ms |
 | `POST /v1/validate/imports` | Check AI package imports against live registries | 1 | <200ms |
 | `POST /v1/verify` | Hallucination firewall — PASS/FLAG/BLOCK | 2 | <500ms |
-| `POST /v1/distill` | Compress conversation context to token budget | 1 | <50ms |
+| `POST /v1/distill` | Compress conversation context to a token budget | 1 | <50ms |
+
+### Security
+| Endpoint | Purpose | Credits | Latency |
+|---|---|---|---|
 | `POST /v1/scan/secrets` | Detect hardcoded credentials in code | 1 | <10ms |
 | `POST /v1/scan/injection` | Detect prompt injection in user input | 1 | <10ms |
-| `POST /v1/tokens/count` | Count tokens + estimate cost before LLM call | 1 | <10ms |
-| `POST /v1/scan/vulnerabilities` | Check packages against OSV/CVE database | 2 | <500ms |
+| `POST /v1/tokens/count` | Count tokens + estimate cost before an LLM call | 1 | <10ms |
+| `POST /v1/scan/vulnerabilities` | Check packages against the OSV/CVE database | 2 | <500ms |
 | `POST /v1/scan/pii` | Detect & redact PII/PHI/PCI before egress | 1 | <20ms |
+| `POST /v1/scan/command` | Flag destructive shell commands before execution | 1 | <5ms |
+| `POST /v1/scan/url` | Block SSRF / egress-policy violations before a fetch | 1 | <5ms |
 
-**1 SOL = 10,000 credits** · Free tier: 10 calls/IP
+### Finance
+| Endpoint | Purpose | Credits | Latency |
+|---|---|---|---|
+| `POST /v1/finance/units` | Validate raw vs UI token amount (decimal safety) | 1 | <10ms |
+| `POST /v1/finance/price` | Cross-source price validation | 2 | ~300ms |
+| `POST /v1/finance/symbol` | Resolve ticker / token identity | 1 | ~200ms |
+| `POST /v1/finance/token/risk` | Rug-pull / mint & freeze authority scan | 3 | ~500ms |
+| `POST /v1/finance/slippage` | Pool depth / price-impact estimate | 2 | ~200ms |
+| `POST /v1/finance/order/risk` | Composite pre-trade gate (runs all checks) | 5 | ~500ms |
+| `POST /v1/finance/position/check` | Deterministic position limits + kill-switch | 1 | <1ms |
+
+### Compliance & health
+| Endpoint | Purpose | Credits | Latency |
+|---|---|---|---|
+| `POST /v1/compliance/sanctions` | Screen names against OFAC SDN + Consolidated | 1 | <10ms |
+| `POST /v1/health/rx-check` | Medication unit / overdose / interaction gate | 2 | <10ms |
+
+### Agent · infra · legal
+| Endpoint | Purpose | Credits | Latency |
+|---|---|---|---|
+| `POST /v1/agent/tool-args` | Validate tool-call args against schema + policy | 1 | <5ms |
+| `POST /v1/infra/plan/risk` | Static IaC blast-radius gate (Terraform / IAM / K8s) | 2 | <10ms |
+| `POST /v1/legal/cite` | Validate US case citations + quote fidelity | 2 | <5ms |
+| `POST /v1/legal/deadline` | Court / calendar deadline math | 1 | <5ms |
+
+### Data & validation
+| Endpoint | Purpose | Credits | Latency |
+|---|---|---|---|
+| `POST /v1/validate/identifier` | Checksum-validate IBAN / card / VIN / NPI / … | 1 | <5ms |
+| `POST /v1/validate/schema` | Validate JSON against a JSON Schema (Draft-07) | 1 | <5ms |
+| `POST /v1/scan/sql` | Flag destructive / injection-prone SQL | 1 | <5ms |
 
 ---
 
 ## API reference
+
+Detailed request/response docs for the core endpoints follow. The Security, Compliance, Health, Agent, Infra, Legal, and Data suites are fully specified in [`openapi.json`](openapi.json) and on [agent-toolbox.ai](https://agent-toolbox.ai).
 
 ### `GET /v1/pricing`
 
@@ -385,7 +428,7 @@ Checks package names against the [OSV (Open Source Vulnerabilities)](https://osv
 
 ### Free tier
 
-10 calls per IP. No auth, no signup. All 7 endpoints included.
+10 calls per IP. No auth, no signup. All 26 tools included.
 
 ### Paid tier — autonomous SOL micropayments
 
@@ -608,9 +651,9 @@ git clone https://github.com/solhammer/agentoolbox
 cd agentoolbox && pnpm install && pnpm --filter agentoolbox-mcp build
 ```
 
-No API key or env vars are required — the MCP server runs all 15 tools in-process (free public data sources only).
+No API key or env vars are required — the MCP server runs all 26 tools in-process (free public data sources only).
 
-**MCP tools available (all 15 endpoints):**
+**MCP tools available (all 26 tools):**
 
 | Tool | Description |
 |---|---|
@@ -622,6 +665,8 @@ No API key or env vars are required — the MCP server runs all 15 tools in-proc
 | `count_tokens` | Token count + cost estimate for text or messages |
 | `scan_vulnerabilities` | Check packages against the OSV/CVE database |
 | `scan_pii` | Detect & redact PII/PHI/PCI before egress |
+| `scan_command` | Flag destructive shell commands before execution |
+| `scan_url` | Block SSRF / egress-policy violations before a fetch |
 | `finance_units` | Validate raw vs UI token amount (decimal safety) |
 | `finance_price` | Cross-source price validation |
 | `finance_symbol` | Resolve ticker/token identity |
@@ -629,6 +674,15 @@ No API key or env vars are required — the MCP server runs all 15 tools in-proc
 | `finance_slippage` | Pool depth / price-impact estimate |
 | `finance_order_risk` | Composite pre-trade gate |
 | `finance_position_check` | Deterministic position limits + kill-switch |
+| `screen_sanctions` | Screen names against OFAC SDN + Consolidated |
+| `rx_check` | Medication unit / overdose / interaction gate |
+| `check_tool_args` | Validate tool-call args against schema + policy |
+| `check_infra_plan` | Static IaC blast-radius gate (Terraform / IAM / K8s) |
+| `check_citation` | Validate US case citations + quote fidelity |
+| `compute_deadline` | Court / calendar deadline math |
+| `validate_identifier` | Checksum-validate IBAN / card / VIN / NPI / … |
+| `validate_schema` | Validate JSON against a JSON Schema (Draft-07) |
+| `scan_sql` | Flag destructive / injection-prone SQL |
 
 ### Use it in Warp & Oz cloud agents
 
@@ -662,14 +716,16 @@ const client = new AgentoolboxClient({
   apiKey: process.env.AGENTOOLBOX_API_KEY, // Solana tx signature — omit for free tier
 });
 
-// All 7 services
+// A representative slice of the 26 tools — full surface in openapi.json
 await client.validateImports({ language: "python", code });
 await client.verify({ outputType: "code", language: "python", llmResponse: code });
-await client.distill({ messages, targetTokens: 4000 });
-await client.scanSecrets({ code });
-await client.scanInjection({ input: userMessage });
-await client.countTokens({ messages, model: "claude" });
-await client.scanVulnerabilities({ packages: ["numpy", "pillow"], language: "python" });
+await client.scanPii({ text: outboundMessage });
+await client.scanCommand({ command: "rm -rf /tmp/cache" });
+await client.scanUrl({ url: "https://example.com/webhook" });
+await client.screenSanctions({ name: counterpartyName });
+await client.checkToolArgs({ args, schema });
+await client.validateIdentifier({ value: "DE89370400440532013000", type: "iban" });
+await client.scanSql({ sql: "DELETE FROM users WHERE id = 42" });
 ```
 
 ---
@@ -689,6 +745,12 @@ See [`.env.example`](.env.example) for full documentation.
 
 **Deploy:** Railway (Docker) for the API · Cloudflare Pages for the website and admin dashboard.  
 Every push to `main` auto-deploys via GitHub Actions.
+
+---
+
+## Roadmap
+
+Agentoolbox ships in waves — 26 tools across 6 suites today (through Wave 4), with regulated-vertical and platform-moat tools planned next. The full plan, design contract, and near-term supply-chain hardening track live in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ---
 
@@ -956,7 +1018,7 @@ Execute transaction
 ### Install
 
 ```bash
-npm install agent-toolbox-sdk     # REST client for all 14 endpoints
+npm install agent-toolbox-sdk     # REST client for all 26 endpoints
 npm install @agentoolbox/finance  # TypeScript library (direct, no API calls for checkPosition)
 ```
 
