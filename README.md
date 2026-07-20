@@ -4,7 +4,8 @@ The quality layer for AI agents. 26 deterministic, offline pre-action gates acro
 
 **API:** `https://api.agent-toolbox.ai`  
 **Website:** [agent-toolbox.ai](https://agent-toolbox.ai)  
-**GitHub:** [solhammer/agentoolbox](https://github.com/solhammer/agentoolbox)
+**GitHub:** [solhammer/agentoolbox](https://github.com/solhammer/agentoolbox)  
+**Wiki:** [Design & how we build tools for agents](https://github.com/solhammer/agentoolbox/wiki)
 
 ---
 
