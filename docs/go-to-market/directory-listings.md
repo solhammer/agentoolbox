@@ -144,3 +144,27 @@ call. No LLM in the hot path — outputs are reproducible, loggable, and CI-test
 **Pricing:** 0.0001 SOL per call; `GET /v1/pricing` for programmatic discovery  
 **Docs:** https://agent-toolbox.ai  
 **GitHub:** https://github.com/solhammer/agentoolbox
+
+---
+
+## mcpmarket.com
+
+**Priority:** Low — submit only after the core directories above (Registry, Smithery, mcp.so, Glama, PulseMCP). mcpmarket does **not** auto-sync from the Official Registry, so it needs a manual submission.
+
+**Tier:** **Free Queue ($0)** — avg 4–6 week listing time, no "Official" badge, no "Try Now" link. Do NOT pay the $29 "Get Listed Now" fast-track unless referral traffic later justifies it.
+
+**Submit at:** https://mcpmarket.com/submit (browser form — GitHub repo URL + notification email; no API/CLI, may include a captcha)
+
+**Short blurb (≤160 chars):**
+26 deterministic, offline pre-action gates for AI agents — secrets, injection, finance, compliance, legal. PASS/FLAG/BLOCK + SHA-256 certificate.
+
+_(~145 chars)_
+
+**Fields:**
+- **Type:** MCP Server → GitHub repo
+- **GitHub repo:** https://github.com/solhammer/agentoolbox
+- **Homepage:** https://agent-toolbox.ai
+- **Category:** Security (also fits Developer Tools)
+- **Tags:** mcp, security, agents, finance, compliance
+
+**Note:** mcpmarket auto-pulls the name, description, install snippet, and tools list from the repo README, so the README's first paragraph drives listing quality. Keep GitHub topics including `mcp` and `model-context-protocol` (also feeds free auto-indexers like Glama).

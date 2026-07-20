@@ -136,6 +136,33 @@ submission path.
 
 ---
 
+### 5a. mcpmarket.com (low priority — free tier)
+
+**Priority:** Low. Submit only after the core directories (1–5 above). mcpmarket does not auto-sync from the Official Registry, so it needs a manual submission.
+
+**URL:** https://mcpmarket.com/submit
+
+**Tier:** **Free Queue ($0)** — avg 4–6 week listing time, no "Official" badge, no "Try Now" link. Do NOT select "Get Listed Now" ($29) unless referral traffic later justifies it.
+
+**Fields:**
+- **Type:** MCP Server → GitHub repo
+- **GitHub repo URL:** `https://github.com/solhammer/agentoolbox`
+- **Description:** use **mcpmarket.com short blurb** from `directory-listings.md`
+- **Category:** Security
+- **Tags:** mcp, security, agents, finance, compliance
+- **Notification email:** maintainer email (for the "listing is live" alert)
+- **Try Now link:** leave off (free tier)
+
+**Steps:**
+1. Go to the submit URL; choose **MCP Server** → **GitHub repo**.
+2. Paste the repo URL and select the **Free Queue** ($0) option (not the $29 fast-track).
+3. Enter the notification email and submit (form only — no API/CLI; may include a captcha).
+4. Record the confirmation + expected go-live window in the tracking table below.
+
+**Note:** mcpmarket auto-pulls name/description/install/tools from the repo README, so the README first paragraph drives listing quality.
+
+---
+
 ### 6. Product Hunt
 
 **URL:** https://www.producthunt.com/posts/new
@@ -233,6 +260,7 @@ After all submissions are live, record the following:
 | mcp.so | | | |
 | Glama | | | |
 | PulseMCP | | | |
+| mcpmarket.com | | | free tier (low priority) |
 | Product Hunt | | | |
 | Hacker News | | | |
 | X / Twitter | | | |
