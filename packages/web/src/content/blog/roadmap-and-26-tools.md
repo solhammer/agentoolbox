@@ -3,12 +3,8 @@ title: "26 Gates and a Roadmap in the Open"
 date: 2026-07-19
 description: "Agentoolbox is now 26 deterministic, offline gates across 6 suites — and we're publishing the roadmap that shows where it goes next."
 author: Agentoolbox
-slug: roadmap-and-26-tools
 tags: [ai-agents, reliability, safety, roadmap]
-canonical: https://agent-toolbox.ai/blog/roadmap-and-26-tools
 ---
-
-# 26 Gates and a Roadmap in the Open
 
 AI agents don't fail because they can't reason. They fail because they *act* — they
 run the command, send the tokens, write the record, call the tool — and the action is
